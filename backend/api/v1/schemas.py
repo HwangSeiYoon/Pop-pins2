@@ -10,6 +10,13 @@ from datetime import datetime
 
 # ==================== Member 스키마 ====================
 
+class SignupResponse(BaseModel):
+    """회원가입 리스폰스"""
+    state: str
+    id: int
+    email: str
+    created_at: datetime
+
 class MemberSignup(BaseModel):
     """회원가입 요청"""
     email: EmailStr
@@ -34,6 +41,7 @@ class MemberResponse(BaseModel):
 
 class LoginResponse(BaseModel):
     """로그인 응답"""
+    state: str  # "success" or "failed"
     access_token: str
     token_type: str = "bearer"
     member: MemberResponse
@@ -66,6 +74,21 @@ class ConceptDTO(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     is_complete: bool
+
+class ExerciseResponse(BaseModel):
+    """실습 과제 응답"""
+    id: int
+    title: Optional[str] = None
+    contents: Optional[str] = None
+    is_complete: bool
+
+
+class ExerciseWithChapterResponse(BaseModel):
+    """챕터 정보를 포함한 실습 과제 응답"""
+    chapter_id: int
+    chapter_title: str
+    chapter_contents: Optional[str] = None
+    exercise: ExerciseResponse
 
 
 class ExerciseDTO(BaseModel):

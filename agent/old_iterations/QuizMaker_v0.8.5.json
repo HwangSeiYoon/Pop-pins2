@@ -1,0 +1,175 @@
+{
+  "name": "105-1. Quizmaker II",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST"
+        ],
+        "path": "quiz1",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "36bbfcd4-f721-401e-a35f-23a1672bbfc3",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        240,
+        -96
+      ],
+      "webhookId": "113152db-bb42-4556-8c9c-aa75b4a6c61f",
+      "retryOnFail": false,
+      "typeVersion": 2.1,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "089d656d-a4de-4e83-bae5-aa90364557e9",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        240,
+        160
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "o1pUX0sSSunBHGtz",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.quizes }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "315d835e-85b4-4f74-bad7-076d10964e98",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1008,
+        -96
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. 입력 가져오기\nlet raw = $input.first().json.output;\n\n// 2. 코드블록( ```json ... ``` ) 제거\nif (typeof raw === \"string\") {\n  raw = raw.replace(/```json\\s*/g, \"\").replace(/```/g, \"\").trim();\n}\n\n// 3. 문자열을 JSON으로 파싱\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  parsed = { quizes: [] };\n}\n\n// 4. 결과 반환 (불필요한 wrapping 없이)\nreturn parsed;\n"
+      },
+      "id": "5172caf1-ce66-470f-8667-13fbb93280c2",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        816,
+        -96
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=={{ \n\"Course Title: \" + $json.body.courseTitle + \"\\n\" +\n\"Chapter Title: \" + $json.body.chapterTitle + \"\\n\" +\n\"Course Prompt: \" + $json.body.coursePrompt\n}}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "당신은 JSON 응답 전용 AI입니다.\n\n입력 데이터는 다음 형식으로 주어집니다:\n\n\t\"courseTitle\": \"string\",\n\t\"courseDescription\": \"string\",\n\t\"chapterTitle\": \"string\",\n\t\"chapterDescription\": \"string\"\n\n작업:\nYou are an expert quiz question generator, skilled at crafting subjective essay-type questions that provoke thoughtful responses. Your task is to generate three subjective essay-type quiz questions based on the provided course title, chapter title, and course prompt. The output must be a JSON array named `quizes`, containing three objects, each with a `quiz` (string) field.\n# Step by Step instructions\n1. Acknowledge the provided Course Title, Chapter Title, and Course Prompt.\n2. Generate one subjective essay-type quiz question that is related to the Course Title, Chapter Title, and Course Prompt.\n3. Review the question generated so far. If three questions have been generated, proceed to the next step. Otherwise, return to Step 2 and generate another question.\n4. Format the three generated questions into a JSON array named `quizes`, where each question is an object with a `quiz` field.\n\n\n출력 형식 (반드시 JSON):\n{\n  \"quizes\" : [\n    {\n      \"quiz\" : \"string\"\n    },\n    {\n      \"quiz\" : \"string\"\n    },\n    {\n      \"quiz\" : \"string\"\n  ]\n}\n\n⚠️ 규칙:\n- 반드시 위 JSON 구조만 출력하세요.\n- 절대로 {\"output\": {...}} 또는 문자열(JSON string) 형태로 감싸지 마세요.\n- 대화형 멘트, 설명, 사족 없이 오직 JSON 데이터만 출력하세요.\n- \"contents\" 필드는 markdown 문서 본문으로 채우세요 .\n⚠️ 출력 시 절대로 Markdown 코드블록(````json`, ``` 등)을 포함하지 마세요.\n⚠️ 절대로 {\"output\": {...}} 형태로 감싸지 말고, \n오직 {\"title\": \"...\", \"description\": \"...\", \"contents\": \"...\"} 구조로만 출력하세요.\n"
+        }
+      },
+      "id": "b53732a0-e592-4b47-b1ca-da6bf4fc9be8",
+      "name": "QuizMaker",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        448,
+        -96
+      ],
+      "typeVersion": 3,
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "QuizMaker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "QuizMaker",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QuizMaker": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d79e0812-bd00-4c40-86c1-17a544210d66",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "80eb4af7e1f0a6b1250e1e59a96c1b5d5d7138f42a94f997f80629b587ebbfc8"
+  },
+  "id": "wV7T1GWLZtcBUVRH",
+  "tags": []
+}

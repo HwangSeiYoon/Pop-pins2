@@ -123,8 +123,8 @@ class Exercise(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     chapter_id = Column(Integer, ForeignKey("chapter.id", ondelete="CASCADE"), nullable=False)
-    question = Column(Text, nullable=True)  # AI가 생성
-    answer = Column(Text, nullable=True)  # AI가 생성
+    title = Column(String(255), nullable=True)
+    contents = Column(String(255), nullable=True)
     is_complete = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -8,28 +8,12 @@ networks:
 volumes:
   volume-n8n:
     driver: local
-    driver_opts:
-      type: none
-      device: ${PWD}/volume-n8n
-      o: bind
   volume-mysql:
     driver: local
-    driver_opts:
-      type: none
-      device: ${PWD}/volume-mysql
-      o: bind
   volume-kafka:
     driver: local
-    driver_opts:
-      type: none
-      device: ${PWD}/volume-kafka
-      o: bind
   volume-redis:
     driver: local
-    driver_opts:
-      type: none
-      device: ${PWD}/volume-redis
-      o: bind
 
 services:
   n8n:

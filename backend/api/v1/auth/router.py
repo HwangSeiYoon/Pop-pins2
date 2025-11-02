@@ -9,13 +9,14 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import os
 import redis
+import json
+from core.config import settings
 
 # 환경 변수
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-this-in-production")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24시간
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 # 비밀번호 해싱
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -70,8 +71,19 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    # Redis에 JWT 데이터 저장
     r = redis.Redis(host='localhost', port=6379, decode_responses=True)
-    r.set('user:1:name', 'John')
+    user_id = data.get("user_id")
+    if user_id:
+        # user_id를 키로 사용하여 JWT payload 데이터 저장
+        redis_key = f"user:{user_id}:session"
+        redis_value = json.dumps({
+            "token": encoded_jwt
+        })
+        # 만료 시간과 동일하게 24시간 설정
+        r.setex(redis_key, ACCESS_TOKEN_EXPIRE_MINUTES * 60, redis_value)
+
     return encoded_jwt
 
 

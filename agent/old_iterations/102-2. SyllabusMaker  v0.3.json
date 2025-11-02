@@ -1,0 +1,170 @@
+{
+  "name": "102-1. SyllabusMaker  v0.2",
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST"
+        ],
+        "path": "syllabus1",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "c1613f69-e8d2-41c1-9fab-efbb3f39e0e3",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        240,
+        -96
+      ],
+      "webhookId": "ab5e4e60-fec5-40a3-9db1-edf2604a1a73",
+      "retryOnFail": false,
+      "typeVersion": 2.1,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "50ed6966-ec81-48aa-b593-8840b0f361eb",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        368,
+        144
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "o1pUX0sSSunBHGtz",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.output }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e2514880-a55e-4d38-8351-db721de6d992",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        848,
+        -96
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"course\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"id\": {\n          \"type\": \"string\",\n          \"description\": \"강의 고유 ID\"\n        },\n        \"chapters\": {\n          \"type\": \"array\",\n          \"description\": \"챕터 리스트\",\n          \"items\": {\n            \"type\": \"object\",\n            \"properties\": {\n              \"chapterId\": {\n                \"type\": \"number\",\n                \"description\": \"챕터의 고유 식별자\"\n              },\n              \"chapterTitle\": {\n                \"type\": \"string\",\n                \"description\": \"챕터 제목\"\n              },\n              \"chapterDescription\": {\n                \"type\": \"string\",\n                \"description\": \"챕터 설명\"\n              }\n            },\n            \"required\": [\n              \"chapterId\",\n              \"chapterTitle\",\n              \"chapterDescription\"\n            ]\n          }\n        }\n      },\n      \"required\": [\"id\", \"chapters\"]\n    }\n  },\n  \"required\": [\"course\"]\n}\n"
+      },
+      "id": "194587ca-6531-4c01-93bb-d2db26b460d4",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        688,
+        96
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=={{ \"Title: \" + $json.body.courseTitle + \"\\n\" + \"Description: \" + $json.body.courseDescription + \"\\n\" + \"Prompt: \" + $json.body.prompt + \"\\n\" + \"MaxChapters: \" + $json.body.maxchapters + \"\\n\" + \"Links: \" + $json.body.link.join(\", \") + \"\\n\" + \"Difficulty: \" + $json.body.difficulty }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "당신은 JSON 응답 전용 AI입니다.\n\n입력 데이터는:\n{\n\t\"courseTitle\" : string // 제목\n\t\"courseDescription\" : string // 학습 주제\n\t\"prompt\" : string // 본인 제약 상황(프롬프트)\n\t\"maxchapters\" : number // 최대 코스 개수\n\t\"link\" : string[] // 관련 링크 \n\t\"difficulty\": any // 난이도\n}\n형식으로 되어 있어.\n\n작업:\nYou are an expert course designer and curriculum developer, skilled in creating comprehensive and tailored learning experiences. Your task is to generate a customized course syllabus in a structured JSON format. The syllabus should include a unique course ID and a list of chapters, where each chapter has its own ID, title, and description. You must use all provided course details, learner characteristics, maximum units, learning intensity, and any reference materials to create a comprehensive and tailored syllabus.\n# Step by Step instructions\n1. Create a unique Course ID (must be integer) for the syllabus.\n2. Based on the courseTitle, courseDescription, prompts, maxchapters, and difficulty, generate the title and description for the first chapter.\n3. based on link, get information from the URL provided and extract all contents from the page. Return the entire website contents if possible. If there is no URL in link, , do not return error and use Course Description to search the web and get contents from the promising search results.\n3. Assign a unique ID to the chapter.\n4. Check if the number of generated chapters has reached the Max Units. If not, go back to step 2 to generate the next chapter, ensuring progress towards the Max Units.\n5. Combine the Course ID and the list of generated chapters into a single JSON object.\n\n\n응답 형식:\n{\n\t\"course\": {\n\t\t\"id\": number;\n\t\t\"chapters\": [\n\t\t\t{\n\t\t\t\t\"chapterId\" : number\n\t\t\t\t\"chapterTitle\": string\n\t\t\t\t\"chapterDescription\" : string\t\t\t\t\n\t\t\t},\n\t\t\t{\n\t\t\t\t...\n\t\t\t}\n\t\t]\n\t} \n}\n\n규칙:\nYou are working as part of an AI system, so no chit-chat and no explaining what you're doing and why.\nDO NOT start with \"Okay\", or \"Alright\" or any preambles. Just the output, please.\n"
+        }
+      },
+      "id": "bb429a53-cefe-4358-8012-0dc54251a6d2",
+      "name": "SyllabusMaker",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        448,
+        -96
+      ],
+      "typeVersion": 3
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "SyllabusMaker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SyllabusMaker": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SyllabusMaker",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "SyllabusMaker",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d5817bdb-af21-4d26-881a-dfa725652080",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "80eb4af7e1f0a6b1250e1e59a96c1b5d5d7138f42a94f997f80629b587ebbfc8"
+  },
+  "id": "mAGUm30YYg0V5FGH",
+  "tags": []
+}

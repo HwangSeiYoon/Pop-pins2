@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO 테스트 클라이언트</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 15px 30px;
+            font-weight: 600;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .content {
+            padding: 30px;
+        }
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .controls h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        input, button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            font-size: 1em;
+        }
+        input {
+            flex: 1;
+            min-width: 150px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .event-log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .event-log h3 {
+            color: #4fc3f7;
+            margin-bottom: 15px;
+        }
+        .event-item {
+            padding: 10px;
+            margin: 8px 0;
+            border-left: 4px solid #4CAF50;
+            background: #2d2d2d;
+            border-radius: 4px;
+            line-height: 1.6;
+        }
+        .event-item.info { border-left-color: #2196F3; }
+        .event-item.success { border-left-color: #4CAF50; }
+        .event-item.warning { border-left-color: #FF9800; }
+        .event-item.error { border-left-color: #f44336; }
+        .event-time {
+            color: #888;
+            font-size: 0.85em;
+        }
+        .event-data {
+            color: #ce9178;
+            margin-top: 5px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Socket.IO 실시간 테스트</h1>
+            <p>챕터 생성 시 실시간 알림 데모</p>
+        </div>
+
+        <div id="status" class="status disconnected">
+            ⚠️ 서버와 연결 끊김
+        </div>
+
+        <div class="content">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="eventCount">0</div>
+                    <div class="stat-label">수신한 이벤트</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="chapterCount">0</div>
+                    <div class="stat-label">생성한 챕터</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <h3>📍 챕터 룸 참여</h3>
+                <div class="input-group">
+                    <input type="number" id="chapterId" placeholder="Chapter ID" value="1">
+                    <button onclick="joinChapter()">룸 참여</button>
+                    <button onclick="leaveChapter()">룸 나가기</button>
+                </div>
+
+                <h3>🎯 챕터 생성 (API 시뮬레이션)</h3>
+                <div class="input-group">
+                    <input type="text" id="chapterTitle" placeholder="챕터 제목" value="변수와 자료형">
+                    <button onclick="createChapter()">챕터 생성</button>
+                </div>
+            </div>
+
+            <div class="event-log" id="eventLog">
+                <h3>📡 실시간 이벤트 로그</h3>
+                <div class="event-item info">
+                    <span class="event-time">[대기 중]</span><br>
+                    Socket.IO 서버에 연결하면 여기에 이벤트가 표시됩니다.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Socket.IO 연결
+        const socket = io('http://localhost:8000');
+        const statusDiv = document.getElementById('status');
+        const eventLog = document.getElementById('eventLog');
+        let currentChapterId = null;
+        let eventCount = 0;
+        let chapterCount = 0;
+
+        // 로그 추가
+        function addLog(message, type = 'info', data = null) {
+            eventCount++;
+            document.getElementById('eventCount').textContent = eventCount;
+
+            const time = new Date().toLocaleTimeString();
+            const logItem = document.createElement('div');
+            logItem.className = `event-item ${type}`;
+
+            let html = `<span class="event-time">[${time}]</span><br>${message}`;
+            if (data) {
+                html += `<div class="event-data">${JSON.stringify(data, null, 2)}</div>`;
+            }
+            logItem.innerHTML = html;
+
+            // 첫 번째 자식 앞에 삽입 (최신 로그가 위로)
+            if (eventLog.children.length > 1) {
+                eventLog.insertBefore(logItem, eventLog.children[1]);
+            } else {
+                eventLog.appendChild(logItem);
+            }
+
+            // 로그 개수 제한 (50개)
+            while (eventLog.children.length > 51) {
+                eventLog.removeChild(eventLog.lastChild);
+            }
+        }
+
+        // 연결 이벤트
+        socket.on('connect', () => {
+            statusDiv.className = 'status connected';
+            statusDiv.innerHTML = '✅ Socket.IO 서버와 연결됨';
+            addLog('🟢 서버에 연결되었습니다', 'success');
+        });
+
+        socket.on('disconnect', () => {
+            statusDiv.className = 'status disconnected';
+            statusDiv.innerHTML = '⚠️ 서버와 연결 끊김';
+            addLog('🔴 서버 연결이 끊어졌습니다', 'error');
+        });
+
+        socket.on('connection_established', (data) => {
+            addLog('✅ 연결 확인됨', 'success', data);
+        });
+
+        // 챕터 룸 참여 확인
+        socket.on('joined_chapter', (data) => {
+            addLog(`✅ 챕터 ${data.chapter_id} 룸에 참여했습니다`, 'success');
+        });
+
+        // 챕터 생성 시작
+        socket.on('chapter_processing_started', (data) => {
+            addLog(`📚 챕터 생성 시작: "${data.title}"`, 'info', data);
+        });
+
+        // 개념 정리 처리 중
+        socket.on('concept_processing', (data) => {
+            addLog(`🧠 개념 정리 AI 생성 중... (ID: ${data.concept_id})`, 'info', data);
+        });
+
+        // 개념 정리 완료
+        socket.on('concept_completed', (data) => {
+            addLog(`✅ 개념 정리 생성 완료! (ID: ${data.concept_id})`, 'success', data);
+        });
+
+        // 실습 과제 처리 중
+        socket.on('exercise_processing', (data) => {
+            addLog(`🧩 실습 과제 AI 생성 중... (ID: ${data.exercise_id})`, 'info', data);
+        });
+
+        // 실습 과제 완료
+        socket.on('exercise_completed', (data) => {
+            addLog(`✅ 실습 과제 생성 완료! (ID: ${data.exercise_id})`, 'success', data);
+        });
+
+        // 퀴즈 처리 중
+        socket.on('quiz_processing', (data) => {
+            addLog(`🧮 퀴즈 AI 생성 중... (${data.quiz_count}개)`, 'info', data);
+        });
+
+        // 퀴즈 완료
+        socket.on('quiz_completed', (data) => {
+            addLog(`✅ 퀴즈 생성 완료! (${data.quiz_count}개)`, 'success', data);
+        });
+
+        // 모든 리소스 생성 완료
+        socket.on('all_completed', (data) => {
+            addLog(`🎉 ${data.message}`, 'success', data);
+        });
+
+        // 진행률 업데이트
+        socket.on('progress_update', (data) => {
+            addLog(`⏳ ${data.progress}% - ${data.message}`, 'info', data);
+        });
+
+        // 챕터 룸 참여
+        function joinChapter() {
+            const chapterId = parseInt(document.getElementById('chapterId').value);
+            if (chapterId) {
+                currentChapterId = chapterId;
+                socket.emit('join_chapter', { chapter_id: chapterId });
+                addLog(`🔔 챕터 ${chapterId} 룸 참여 요청`, 'info');
+            }
+        }
+
+        // 챕터 룸 나가기
+        function leaveChapter() {
+            if (currentChapterId) {
+                socket.emit('leave_chapter', { chapter_id: currentChapterId });
+                addLog(`👋 챕터 ${currentChapterId} 룸에서 나갔습니다`, 'warning');
+                currentChapterId = null;
+            }
+        }
+
+        // 챕터 생성 API 호출
+        async function createChapter() {
+            const chapterId = parseInt(document.getElementById('chapterId').value);
+            const title = document.getElementById('chapterTitle').value;
+
+            addLog(`🚀 챕터 생성 요청: "${title}"`, 'info');
+
+            try {
+                const response = await fetch('http://localhost:8000/v1/chapter/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        course_id: 1,
+                        title: title,
+                        description: '테스트 챕터입니다',
+                        owner_id: 1
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    chapterCount++;
+                    document.getElementById('chapterCount').textContent = chapterCount;
+                    addLog(`✅ 챕터 생성 성공 (ID: ${data.chapter_id})`, 'success', data);
+
+                    // 자동으로 해당 챕터 룸 참여
+                    document.getElementById('chapterId').value = data.chapter_id;
+                    currentChapterId = data.chapter_id;
+                    socket.emit('join_chapter', { chapter_id: data.chapter_id });
+                } else {
+                    addLog(`❌ 챕터 생성 실패: ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ 에러: ${error.message}`, 'error');
+            }
+        }
+
+        // 페이지 로드 시 자동으로 챕터 1 룸 참여
+        socket.on('connect', () => {
+            setTimeout(() => {
+                if (!currentChapterId) {
+                    joinChapter();
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

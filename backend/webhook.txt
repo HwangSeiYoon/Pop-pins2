@@ -1,0 +1,108 @@
+퀴즈 정답 제출하기(/webhook/answer)
+
+request
+// 백엔드는 DB 에서 해당 값을 불러다가 웹훅에 요청 넣으시면 됩니다
+{
+  "output" : {
+  	"courseTitle" : "string" // 이게 강의 제목
+  	"courseDescription" : "string" // 강의 상세
+    "contents" : [
+      {
+        //"id" : "number" 이건 여기에 넣지 않고, 상태값은 카프카에 넣어서 사용하시면 됩니다.
+        "quiz" : "string",
+        "answer" : "string"
+      },
+      {
+        //"id" : "number"
+        "quiz" : "string",
+        "answer" : "string"
+      },
+      {
+        //"id" : "number"
+        "quiz" : "string",
+        "answer" : "string"
+      }
+    ]
+  }
+}
+
+response
+{
+  "scores" : [
+  {
+      "id" : "number",
+      "score" : "number"
+      "correct_answer" : "string"
+   },
+   {
+      "id" : "number",
+      "score" : "number"
+      "correct_answer" : "string"
+   },
+   {
+      "id" : "number",
+      "score" : "number"
+      "correct_answer" : "string"
+   }
+  ]
+}
+
+
+형성평가 생성하기(/webhook/quiz)
+request
+//카프카에 넣어서 보내세요
+
+{
+  "courseTitle" : "string"
+  "chapterTitle" : "string"
+	"coursePrompt" : "string" // 유저가 초기에 원하는 목표를 같이 넣어줘야할까요??
+}
+
+response
+{
+  "quizes" : [
+    {
+      "quiz" : "string"
+    },
+    {
+      "quiz" : "string"
+    },
+    {
+      "quiz" : "string"
+  ]
+}
+
+실습 생성하기(/webhook/exercise)
+request
+{
+  "courseTitle" : "string",
+  "courseDescription" : "string"
+  "chapterTitle" : "string"
+  "chapterDescription" : "string"
+}
+
+response
+{
+	"title" : "string"
+	"description" : "string"
+	"contents" : "string" //md 파일
+}
+
+개념 정리 생성하기(/webhook/concept)
+request
+//카프카에 과정 id 같은 상태 정보 넣어서 보내면 됩니다.
+//여기에 넣지 않아야 합니다.
+
+{
+  "courseTitle" : "string",
+  "courseDescription" : "string"
+  "chapterTitle" : "string"
+  "chapterDescription" : "string"
+}
+
+response
+{
+  "title" : "string"
+  "description" : "string"
+  "contents" : "string"
+}

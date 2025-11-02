@@ -42,11 +42,31 @@ class Member(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relationships - 단일 모드에서는 member -> chapter만 관리
+    # Relationships
+    courses = relationship("Course", back_populates="owner", cascade="all, delete-orphan")
     chapters = relationship("Chapter", back_populates="owner", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Member(id={self.id}, email={self.email})>"
+
+
+class Course(Base):
+    """강의 모델 (학습 주제 단위)"""
+    __tablename__ = "course"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    difficulty = Column(Enum(DifficultyEnum), default=DifficultyEnum.medium)
+    owner_id = Column(Integer, ForeignKey("member.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    owner = relationship("Member", back_populates="courses")
+
+    def __repr__(self):
+        return f"<Course(id={self.id}, title={self.title}, difficulty={self.difficulty})>"
 
 
 class Chapter(Base):

@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOCGODAI - 학습 플랫폼 데모</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-left: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .status-pending {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .status-completed {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-processing {
+            background: #17a2b8;
+            color: white;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .socket-events {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .socket-event {
+            padding: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #667eea;
+            background: white;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .socket-event .time {
+            color: #6c757d;
+            font-size: 0.85em;
+        }
+
+        .socket-event .event-name {
+            font-weight: 600;
+            color: #667eea;
+            margin-right: 10px;
+        }
+
+        .learning-content {
+            margin-top: 15px;
+        }
+
+        .learning-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .learning-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .learning-section p {
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .quiz-options {
+            margin-top: 15px;
+        }
+
+        .quiz-option {
+            display: block;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quiz-option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .quiz-option input {
+            margin-right: 10px;
+        }
+
+        .quiz-result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .quiz-result.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+
+        .quiz-result.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .user-info {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chapter-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .chapter-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid #667eea;
+        }
+
+        .chapter-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .chapter-item .title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .chapter-item .meta {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .socket-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .socket-connected {
+            background: #28a745;
+            box-shadow: 0 0 8px #28a745;
+        }
+
+        .socket-disconnected {
+            background: #dc3545;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 DOCGODAI</h1>
+            <p>AI 기반 맞춤형 학습 플랫폼</p>
+        </div>
+
+        <!-- User Info -->
+        <div id="userInfo" class="user-info hidden">
+            <div>
+                <strong>로그인:</strong> <span id="userEmail"></span>
+                <span class="socket-status" id="socketStatus"></span>
+                <span id="socketStatusText">연결 중...</span>
+            </div>
+            <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
+        </div>
+
+        <!-- Auth Section -->
+        <div id="authSection" class="card">
+            <h2>🔐 회원가입 / 로그인</h2>
+
+            <div class="grid">
+                <div>
+                    <h3>회원가입</h3>
+                    <div class="form-group">
+                        <label>이메일</label>
+                        <input type="email" id="signupEmail" placeholder="student@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>비밀번호</label>
+                        <input type="password" id="signupPassword" placeholder="비밀번호 입력">
+                    </div>
+                    <button class="btn" onclick="signup()">회원가입</button>
+                </div>
+
+                <div>
+                    <h3>로그인</h3>
+                    <div class="form-group">
+                        <label>이메일</label>
+                        <input type="email" id="loginEmail" placeholder="student@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>비밀번호</label>
+                        <input type="password" id="loginPassword" placeholder="비밀번호 입력">
+                    </div>
+                    <button class="btn" onclick="login()">로그인</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question Section -->
+        <div id="questionSection" class="card hidden">
+            <h2>❓ 질문하기</h2>
+            <div class="form-group">
+                <label>질문을 입력하세요</label>
+                <textarea id="questionTitle" placeholder="예: 파이썬 리스트와 튜플 차이가 뭐예요?"></textarea>
+            </div>
+            <div class="form-group">
+                <label>추가 설명 (선택)</label>
+                <textarea id="questionDesc" placeholder="더 자세히 알고 싶은 내용을 입력하세요"></textarea>
+            </div>
+            <button class="btn" onclick="createChapter()">질문 등록</button>
+        </div>
+
+        <!-- Socket Events -->
+        <div id="socketSection" class="card hidden">
+            <h2>
+                📡 실시간 처리 현황
+                <span class="socket-status" id="socketStatusIcon"></span>
+            </h2>
+            <div class="socket-events" id="socketEvents">
+                <p style="color: #6c757d; text-align: center;">Socket.IO 이벤트가 여기에 표시됩니다</p>
+            </div>
+        </div>
+
+        <!-- Chapters List -->
+        <div id="chaptersSection" class="card hidden">
+            <h2>📚 내 질문 목록</h2>
+            <button class="btn" onclick="loadChapters()">목록 새로고침</button>
+            <ul class="chapter-list" id="chaptersList"></ul>
+        </div>
+
+        <!-- Learning Page -->
+        <div id="learningSection" class="card hidden">
+            <h2>
+                📖 학습 페이지
+                <span id="chapterStatus"></span>
+            </h2>
+
+            <div id="learningContent">
+                <div class="learning-section">
+                    <h3>🎓 개념 정리</h3>
+                    <div id="conceptContent">
+                        <p style="color: #6c757d;">AI가 개념을 생성 중입니다...</p>
+                    </div>
+                </div>
+
+                <div class="learning-section">
+                    <h3>💻 실습 과제</h3>
+                    <div id="exerciseContent">
+                        <p style="color: #6c757d;">AI가 실습 과제를 생성 중입니다...</p>
+                    </div>
+                </div>
+
+                <div class="learning-section">
+                    <h3>✅ 퀴즈</h3>
+                    <div id="quizContent">
+                        <p style="color: #6c757d;">AI가 퀴즈를 생성 중입니다...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let state = {
+            token: null,
+            userId: null,
+            userEmail: null,
+            currentChapterId: null,
+            socket: null
+        };
+
+        const API_BASE = 'http://localhost:8000';
+
+        // Initialize
+        window.onload = () => {
+            addSocketEvent('시스템', '페이지 로드됨');
+        };
+
+        // Socket.IO connection
+        function connectSocket() {
+            state.socket = io(API_BASE);
+
+            state.socket.on('connect', () => {
+                addSocketEvent('연결', 'Socket.IO 서버 연결 성공');
+                updateSocketStatus(true);
+            });
+
+            state.socket.on('disconnect', () => {
+                addSocketEvent('연결', 'Socket.IO 서버 연결 끊김');
+                updateSocketStatus(false);
+            });
+
+            state.socket.on('chapter_processing_started', (data) => {
+                addSocketEvent('chapter_processing_started', `챕터 생성 시작: ${data.title}`);
+            });
+
+            state.socket.on('concept_processing', (data) => {
+                addSocketEvent('concept_processing', `개념 정리 AI 생성 중... (concept_id: ${data.concept_id})`);
+            });
+
+            state.socket.on('concept_completed', (data) => {
+                addSocketEvent('concept_completed', `✅ 개념 정리 완료!`);
+                if (state.currentChapterId === data.chapter_id) {
+                    loadLearningPage(data.chapter_id);
+                }
+            });
+
+            state.socket.on('exercise_processing', (data) => {
+                addSocketEvent('exercise_processing', `실습 과제 AI 생성 중... (exercise_id: ${data.exercise_id})`);
+            });
+
+            state.socket.on('exercise_completed', (data) => {
+                addSocketEvent('exercise_completed', `✅ 실습 과제 완료!`);
+                if (state.currentChapterId === data.chapter_id) {
+                    loadLearningPage(data.chapter_id);
+                }
+            });
+
+            state.socket.on('quiz_processing', (data) => {
+                addSocketEvent('quiz_processing', `퀴즈 AI 생성 중... (quiz_num: ${data.quiz_num})`);
+            });
+
+            state.socket.on('quiz_completed', (data) => {
+                addSocketEvent('quiz_completed', `✅ 퀴즈 완료!`);
+                if (state.currentChapterId === data.chapter_id) {
+                    loadLearningPage(data.chapter_id);
+                }
+            });
+
+            state.socket.on('all_completed', (data) => {
+                addSocketEvent('all_completed', `🎉 모든 콘텐츠 생성 완료!`);
+                if (state.currentChapterId === data.chapter_id) {
+                    loadLearningPage(data.chapter_id);
+                }
+            });
+        }
+
+        function updateSocketStatus(connected) {
+            const statusIcon = document.getElementById('socketStatusIcon');
+            const statusText = document.getElementById('socketStatusText');
+            const statusDot = document.getElementById('socketStatus');
+
+            if (connected) {
+                statusIcon.className = 'socket-status socket-connected';
+                statusDot.className = 'socket-status socket-connected';
+                statusText.textContent = '연결됨';
+            } else {
+                statusIcon.className = 'socket-status socket-disconnected';
+                statusDot.className = 'socket-status socket-disconnected';
+                statusText.textContent = '연결 끊김';
+            }
+        }
+
+        function joinChapterRoom(chapterId) {
+            if (state.socket) {
+                state.socket.emit('join_chapter', { chapter_id: chapterId });
+                addSocketEvent('join_chapter', `챕터 룸 참여: ${chapterId}`);
+            }
+        }
+
+        function addSocketEvent(eventName, message) {
+            const eventsDiv = document.getElementById('socketEvents');
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'socket-event';
+
+            const now = new Date().toLocaleTimeString();
+            eventDiv.innerHTML = `
+                <span class="time">[${now}]</span>
+                <span class="event-name">${eventName}</span>
+                <span>${message}</span>
+            `;
+
+            eventsDiv.insertBefore(eventDiv, eventsDiv.firstChild);
+
+            // Keep only last 20 events
+            while (eventsDiv.children.length > 20) {
+                eventsDiv.removeChild(eventsDiv.lastChild);
+            }
+        }
+
+        // Auth functions
+        async function signup() {
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            if (!email || !password) {
+                alert('이메일과 비밀번호를 입력하세요');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/v1/member/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('회원가입 성공! 이제 로그인하세요.');
+                    document.getElementById('signupEmail').value = '';
+                    document.getElementById('signupPassword').value = '';
+                } else {
+                    alert(`회원가입 실패: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`에러 발생: ${error.message}`);
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                alert('이메일과 비밀번호를 입력하세요');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/v1/member/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    state.token = data.access_token;
+                    state.userId = data.member.id;
+                    state.userEmail = data.member.email;
+
+                    // UI 업데이트
+                    document.getElementById('authSection').classList.add('hidden');
+                    document.getElementById('userInfo').classList.remove('hidden');
+                    document.getElementById('questionSection').classList.remove('hidden');
+                    document.getElementById('socketSection').classList.remove('hidden');
+                    document.getElementById('chaptersSection').classList.remove('hidden');
+                    document.getElementById('userEmail').textContent = state.userEmail;
+
+                    // Socket.IO 연결
+                    connectSocket();
+
+                    // 챕터 목록 로드
+                    loadChapters();
+
+                    addSocketEvent('로그인', `${state.userEmail} 로그인 성공`);
+                } else {
+                    alert(`로그인 실패: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`에러 발생: ${error.message}`);
+            }
+        }
+
+        async function logout() {
+            if (state.socket) {
+                state.socket.disconnect();
+            }
+
+            state.token = null;
+            state.userId = null;
+            state.userEmail = null;
+            state.currentChapterId = null;
+
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('userInfo').classList.add('hidden');
+            document.getElementById('questionSection').classList.add('hidden');
+            document.getElementById('socketSection').classList.add('hidden');
+            document.getElementById('chaptersSection').classList.add('hidden');
+            document.getElementById('learningSection').classList.add('hidden');
+
+            alert('로그아웃되었습니다');
+        }
+
+        // Chapter functions
+        async function createChapter() {
+            const title = document.getElementById('questionTitle').value;
+            const description = document.getElementById('questionDesc').value;
+
+            if (!title) {
+                alert('질문을 입력하세요');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/v1/chapter/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title,
+                        description,
+                        owner_id: state.userId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    addSocketEvent('챕터 생성', `질문 등록 완료: ${title}`);
+                    alert(`질문이 등록되었습니다!\nChapter ID: ${data.chapter_id}\n\nAI가 콘텐츠를 생성 중입니다. 실시간 현황을 확인하세요.`);
+
+                    // Clear form
+                    document.getElementById('questionTitle').value = '';
+                    document.getElementById('questionDesc').value = '';
+
+                    // Join socket room
+                    joinChapterRoom(data.chapter_id);
+
+                    // Load learning page
+                    state.currentChapterId = data.chapter_id;
+                    loadLearningPage(data.chapter_id);
+
+                    // Reload chapters list
+                    loadChapters();
+                } else {
+                    alert(`질문 등록 실패: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`에러 발생: ${error.message}`);
+            }
+        }
+
+        async function loadChapters() {
+            try {
+                const response = await fetch(`${API_BASE}/v1/chapter/?owner_id=${state.userId}`);
+                const chapters = await response.json();
+
+                const listDiv = document.getElementById('chaptersList');
+                listDiv.innerHTML = '';
+
+                if (chapters.length === 0) {
+                    listDiv.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 20px;">아직 등록한 질문이 없습니다</p>';
+                    return;
+                }
+
+                chapters.forEach(chapter => {
+                    const item = document.createElement('li');
+                    item.className = 'chapter-item';
+                    item.onclick = () => {
+                        state.currentChapterId = chapter.id;
+                        joinChapterRoom(chapter.id);
+                        loadLearningPage(chapter.id);
+                    };
+
+                    const statusClass = chapter.status === 'completed' ? 'status-completed' : 'status-pending';
+                    const statusText = chapter.status === 'completed' ? '완료' : '생성 중';
+
+                    item.innerHTML = `
+                        <div class="title">${chapter.title}</div>
+                        <div class="meta">
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                            <span>생성일: ${new Date(chapter.created_at).toLocaleString()}</span>
+                        </div>
+                    `;
+
+                    listDiv.appendChild(item);
+                });
+            } catch (error) {
+                alert(`챕터 목록 로드 실패: ${error.message}`);
+            }
+        }
+
+        async function loadLearningPage(chapterId) {
+            try {
+                const response = await fetch(`${API_BASE}/v1/chapter/${chapterId}/learning`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('learningSection').classList.remove('hidden');
+
+                    // Update status badge
+                    const statusClass = data.status === 'completed' ? 'status-completed' : 'status-processing';
+                    const statusText = data.status === 'completed' ? '완료' : 'AI 생성 중';
+                    document.getElementById('chapterStatus').innerHTML = `<span class="status-badge ${statusClass}">${statusText}</span>`;
+
+                    // Update concept
+                    const conceptDiv = document.getElementById('conceptContent');
+                    if (data.concept && data.concept.is_complete) {
+                        conceptDiv.innerHTML = `
+                            <h4>${data.concept.title}</h4>
+                            <p>${data.concept.content}</p>
+                        `;
+                    } else {
+                        conceptDiv.innerHTML = '<p style="color: #6c757d;">AI가 개념을 생성 중입니다...</p>';
+                    }
+
+                    // Update exercise
+                    const exerciseDiv = document.getElementById('exerciseContent');
+                    if (data.exercise && data.exercise.is_complete) {
+                        exerciseDiv.innerHTML = `<p><strong>문제:</strong> ${data.exercise.question}</p>`;
+                    } else {
+                        exerciseDiv.innerHTML = '<p style="color: #6c757d;">AI가 실습 과제를 생성 중입니다...</p>';
+                    }
+
+                    // Update quiz
+                    const quizDiv = document.getElementById('quizContent');
+                    if (data.quiz && data.quiz.question) {
+                        let optionsHtml = '';
+                        if (data.quiz.options && Array.isArray(data.quiz.options)) {
+                            optionsHtml = data.quiz.options.map((opt, idx) => `
+                                <label class="quiz-option">
+                                    <input type="radio" name="quizAnswer" value="${opt}">
+                                    ${opt}
+                                </label>
+                            `).join('');
+                        }
+
+                        quizDiv.innerHTML = `
+                            <p><strong>${data.quiz.question}</strong></p>
+                            <div class="quiz-options">
+                                ${optionsHtml}
+                            </div>
+                            <button class="btn" onclick="submitQuiz(${chapterId}, ${data.quiz.id})" style="margin-top: 15px;">정답 제출</button>
+                            <div id="quizResult"></div>
+                        `;
+                    } else {
+                        quizDiv.innerHTML = '<p style="color: #6c757d;">AI가 퀴즈를 생성 중입니다...</p>';
+                    }
+
+                    addSocketEvent('학습 페이지', `챕터 ${chapterId} 로드됨`);
+                } else {
+                    alert(`학습 페이지 로드 실패: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`에러 발생: ${error.message}`);
+            }
+        }
+
+        async function submitQuiz(chapterId, quizId) {
+            const selectedAnswer = document.querySelector('input[name="quizAnswer"]:checked');
+
+            if (!selectedAnswer) {
+                alert('답을 선택하세요');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/v1/quiz/${chapterId}/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        answer: selectedAnswer.value,
+                        member_id: state.userId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const resultDiv = document.getElementById('quizResult');
+                    const resultClass = data.is_correct ? 'correct' : 'incorrect';
+                    const resultText = data.is_correct ? '정답입니다!' : '오답입니다.';
+
+                    resultDiv.className = `quiz-result ${resultClass}`;
+                    resultDiv.innerHTML = `
+                        ${resultText} (점수: ${data.score}점)
+                        ${data.explanation ? `<br><br>${data.explanation}` : ''}
+                    `;
+
+                    addSocketEvent('퀴즈 제출', `결과: ${resultText}`);
+                } else {
+                    alert(`퀴즈 제출 실패: ${data.detail}`);
+                }
+            } catch (error) {
+                alert(`에러 발생: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

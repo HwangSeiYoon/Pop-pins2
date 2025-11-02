@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Simulator - n8n AI 응답 시뮬레이터</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #f5576c;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #f5576c;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #f5576c;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-all {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .response {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .response.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .response.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #856404;
+            line-height: 1.6;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Webhook Simulator</h1>
+            <p>n8n AI 응답 시뮬레이터 (개발/테스트용)</p>
+        </div>
+
+        <div class="info-box">
+            <h3>📘 사용 방법</h3>
+            <p>
+                1. <strong>frontend_demo.html</strong>에서 질문을 등록하세요<br>
+                2. Chapter ID를 확인하세요<br>
+                3. 이 페이지에서 해당 Chapter ID를 입력하고 webhook을 호출하세요<br>
+                4. Socket.IO로 실시간 알림이 전송되고, 프론트엔드에서 학습 페이지가 업데이트됩니다
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>🎯 Webhook 호출</h2>
+
+            <div class="form-group">
+                <label>Chapter ID</label>
+                <input type="number" id="chapterId" placeholder="1" value="1">
+            </div>
+
+            <div class="grid">
+                <button class="btn" onclick="sendConceptWebhook()">📝 개념 정리 완료</button>
+                <button class="btn" onclick="sendExerciseWebhook()">💻 실습 과제 완료</button>
+                <button class="btn" onclick="sendQuizWebhook()">✅ 퀴즈 완료</button>
+            </div>
+
+            <button class="btn btn-all" onclick="sendAllWebhooks()" style="margin-top: 15px; width: 100%;">
+                🚀 모든 Webhook 한번에 전송 (3초 간격)
+            </button>
+
+            <div id="response"></div>
+        </div>
+
+        <div class="card">
+            <h2>⚙️ 커스텀 데이터</h2>
+
+            <div class="form-group">
+                <label>개념 정리 제목</label>
+                <input type="text" id="conceptTitle" placeholder="리스트 vs 튜플" value="리스트 vs 튜플">
+            </div>
+
+            <div class="form-group">
+                <label>개념 정리 내용</label>
+                <textarea id="conceptContent">리스트는 mutable(가변)이고 튜플은 immutable(불변)입니다.
+리스트는 [ ] 로 선언하며 요소를 추가, 삭제, 수정할 수 있습니다.
+튜플은 ( ) 로 선언하며 한번 생성되면 내용을 변경할 수 없습니다.</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>실습 과제 질문</label>
+                <textarea id="exerciseQuestion">다음 리스트를 튜플로 변환하는 코드를 작성하세요:
+my_list = [1, 2, 3, 4, 5]</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>실습 과제 답안</label>
+                <textarea id="exerciseAnswer">my_list = [1, 2, 3, 4, 5]
+my_tuple = tuple(my_list)
+print(my_tuple)  # (1, 2, 3, 4, 5)</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>퀴즈 질문</label>
+                <input type="text" id="quizQuestion" placeholder="튜플은 수정이 가능한가요?" value="튜플은 수정이 가능한가요?">
+            </div>
+
+            <div class="form-group">
+                <label>퀴즈 선택지 (쉼표로 구분)</label>
+                <input type="text" id="quizOptions" placeholder="가능하다, 불가능하다" value="가능하다, 불가능하다">
+            </div>
+
+            <div class="form-group">
+                <label>퀴즈 정답</label>
+                <input type="text" id="quizAnswer" placeholder="불가능하다" value="불가능하다">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+
+        function showResponse(message, isSuccess = true) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.className = isSuccess ? 'response success' : 'response error';
+            responseDiv.textContent = message;
+        }
+
+        async function sendConceptWebhook() {
+            const chapterId = document.getElementById('chapterId').value;
+            const title = document.getElementById('conceptTitle').value;
+            const content = document.getElementById('conceptContent').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/v1/chapter/${chapterId}/concept-finish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResponse(`✅ 개념 정리 Webhook 전송 성공\n\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    showResponse(`❌ 에러: ${JSON.stringify(data, null, 2)}`, false);
+                }
+            } catch (error) {
+                showResponse(`❌ 네트워크 에러: ${error.message}`, false);
+            }
+        }
+
+        async function sendExerciseWebhook() {
+            const chapterId = document.getElementById('chapterId').value;
+            const question = document.getElementById('exerciseQuestion').value;
+            const answer = document.getElementById('exerciseAnswer').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/v1/chapter/${chapterId}/exercise-finish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question, answer })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResponse(`✅ 실습 과제 Webhook 전송 성공\n\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    showResponse(`❌ 에러: ${JSON.stringify(data, null, 2)}`, false);
+                }
+            } catch (error) {
+                showResponse(`❌ 네트워크 에러: ${error.message}`, false);
+            }
+        }
+
+        async function sendQuizWebhook() {
+            const chapterId = document.getElementById('chapterId').value;
+            const question = document.getElementById('quizQuestion').value;
+            const optionsStr = document.getElementById('quizOptions').value;
+            const correctAnswer = document.getElementById('quizAnswer').value;
+
+            const options = optionsStr.split(',').map(opt => opt.trim());
+
+            try {
+                const response = await fetch(`${API_BASE}/v1/chapter/${chapterId}/quiz-finish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question,
+                        options,
+                        correct_answer: correctAnswer,
+                        type: 'multiple'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResponse(`✅ 퀴즈 Webhook 전송 성공\n\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    showResponse(`❌ 에러: ${JSON.stringify(data, null, 2)}`, false);
+                }
+            } catch (error) {
+                showResponse(`❌ 네트워크 에러: ${error.message}`, false);
+            }
+        }
+
+        async function sendAllWebhooks() {
+            showResponse('🚀 모든 Webhook 전송 시작...\n(3초 간격으로 순차 전송)');
+
+            await sendConceptWebhook();
+            await sleep(3000);
+
+            await sendExerciseWebhook();
+            await sleep(3000);
+
+            await sendQuizWebhook();
+
+            showResponse('✅ 모든 Webhook 전송 완료!');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>

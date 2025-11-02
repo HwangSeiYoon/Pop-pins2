@@ -26,7 +26,7 @@ services:
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=${N8N_BLOCK_ENV_ACCESS_IN_NODE}
       - N8N_GIT_NODE_DISABLE_BARE_REPOS=${N8N_GIT_NODE_DISABLE_BARE_REPOS}
     ports:
-      - "127.0.0.1:${N8N_PORT}:5678"
+      - "${N8N_PORT}:5678"
     volumes:
       - volume-n8n:/home/node/.n8n
       - ./workflows:/workflows
@@ -40,7 +40,7 @@ services:
     image: ${MYSQL_IMAGE}
     restart: always
     ports:
-      - "127.0.0.1:${MYSQL_PORT}:3306"
+      - "${MYSQL_PORT}:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_DATABASE=${MYSQL_DATABASE}
@@ -62,7 +62,7 @@ services:
     container_name: kafka
     image: ${KAFKA_IMAGE}
     ports:
-      - '127.0.0.1:${KAFKA_PORT}:9092'
+      - '${KAFKA_PORT}:9092'
     environment:
       - KAFKA_CFG_NODE_ID=${KAFKA_NODE_ID}
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
@@ -80,7 +80,7 @@ services:
     container_name: redis
     image: ${REDIS_IMAGE}
     ports:
-      - 127.0.0.1:${REDIS_PORT}:6379
+      - ${REDIS_PORT}:6379
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
       - volume-redis:/data

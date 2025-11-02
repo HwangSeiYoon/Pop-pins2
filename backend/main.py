@@ -1,41 +1,60 @@
 """
-FastAPI Main Application with Socket.IO (단일 질문-학습 모드)
+FastAPI Main Application
+Socket.IO와 통합된 메인 애플리케이션
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import socketio
+from contextlib import asynccontextmanager
 import uvicorn
 
-# Router imports
-from api.v1.members.router import router as member_router
-from api.v1.chapters.router import router as chapter_router
-from api.v1.quizzes.router import router as quiz_router
-# from api.v1.auth.router import router as auth_router  # auth는 유틸리티만 있음
-from api.v1.courses.router import router as course_router
-from api.v1.concepts.router import router as concept_router
-from api.v1.exercises.router import router as exercise_router
+# 라우터 import (api/v1 구조 사용)
+from api.v1.members import router as members_router
+from api.v1.courses import router as courses_router
+from api.v1.chapters import router as chapters_router
+from api.v1.concepts import router as concepts_router
+from api.v1.exercises import router as exercises_router
+from api.v1.quizzes import router as quizzes_router
+# from api.v1.webhooks import router as webhooks_router  # TODO: webhook router 구현 필요
 
-# Socket.IO
-from core.socketio_manager import sio
+# Socket.IO import
+from core.socketio_manager import socket_app, sio
 
-# Database initialization
-from db.database import engine, redis_client
-from db import models
+# Kafka producer import
+from kafka_producer import close_kafka_producer
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
 
-print("✅ Database tables created successfully")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    애플리케이션 시작/종료 시 실행되는 라이프사이클 이벤트
+    """
+    # 시작 시
+    print("Starting FastAPI application...")
+    
+    # 데이터베이스 초기화
+    try:
+        from db.database import init_db
+        init_db()
+        print("Database initialized successfully!")
+    except Exception as e:
+        print(f"Database initialization failed: {e}")
+    
+    yield
+    # 종료 시
+    print("Shutting down FastAPI application...")
+    close_kafka_producer()
 
-# FastAPI app
+
+# FastAPI 앱 생성
 app = FastAPI(
-    title="DOCGODAI Backend API (단일 모드)",
-    description="질문 1개 → 학습 페이지 1개 (Concept + Exercise + Quiz 1개)",
-    version="2.0.0"
+    title="AI Learning Platform API",
+    description="N8N + Gemini + Kafka를 사용한 AI 기반 학습 플랫폼",
+    version="1.0.0",
+    lifespan=lifespan
 )
 
-# CORS middleware
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 프로덕션에서는 특정 도메인으로 제한
@@ -44,59 +63,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-# app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])  # auth는 유틸리티만 있음
-app.include_router(member_router, prefix="/", tags=["members"])
-app.include_router(course_router, prefix="/", tags=["courses"])
-app.include_router(chapter_router, prefix="/", tags=["chapters"])
-app.include_router(concept_router, prefix="/", tags=["concepts"])
-app.include_router(exercise_router, prefix="/", tags=["exercises"])
-app.include_router(quiz_router, prefix="/", tags=["quizzes"])
+# 라우터 등록
+app.include_router(members_router.router)
+app.include_router(courses_router.router)
+app.include_router(chapters_router.router)
+app.include_router(concepts_router.router)
+app.include_router(exercises_router.router)
+app.include_router(quizzes_router.router)
+# app.include_router(webhooks_router.router)  # TODO: webhook router 구현 필요
 
-# Socket.IO ASGI app 통합
-socket_app = socketio.ASGIApp(sio, app)
+# Socket.IO를 FastAPI에 마운트
+app.mount("/socket.io", socket_app)
 
-
-@app.get("/api/v1/")
-def root():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "message": "DOCGODAI Backend API (단일 모드) is running",
-        "mode": "single_question_learning",
-        "version": "2.0.0"
-    }
-
-
-@app.get("/health")
-def health_check():
-    """Detailed health check"""
-    # Redis 연결 확인
-    redis_status = "connected"
-    try:
-        redis_client.ping()
-    except Exception as e:
-        redis_status = f"error: {str(e)}"
-
-    return {
-        "status": "ok",
-        "database": "connected",
-        "redis": redis_status,
-        "socketio": "enabled",
-        "api_version": "2.0.0"
-    }
-
-@app.get("/api/v1/user/me")
-def get_current_user():
-    """Get current user info"""
-    return {"message": "TODO: Implement user info endpoint"} 
 
 if __name__ == "__main__":
-    # Socket.IO와 함께 실행
+    # 개발 서버 실행
     uvicorn.run(
-        "main:socket_app",  # Socket.IO ASGI app 사용
+        "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,
+        reload=True,  # 개발 모드에서 자동 리로드
         log_level="info"
     )

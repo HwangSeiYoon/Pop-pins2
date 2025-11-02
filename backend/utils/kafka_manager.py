@@ -7,9 +7,15 @@ import json
 import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime
-from kafka import KafkaProducer, KafkaConsumer
-from kafka.errors import KafkaError
-from core.config import settings
+try:
+    from confluent_kafka import Producer, Consumer, KafkaError
+    KAFKA_AVAILABLE = True
+except ImportError:
+    # Fallback when Kafka is not available
+    KAFKA_AVAILABLE = False
+    Producer = None
+    Consumer = None
+    KafkaError = Exception
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -62,41 +68,44 @@ class KafkaManager:
         self.producer = None
         self.consumer = None
         self.kafka_config = {
-            'bootstrap_servers': ['localhost:9092'],
-            'value_serializer': lambda v: json.dumps(v, ensure_ascii=False, default=str).encode('utf-8'),
-            'key_serializer': lambda k: str(k).encode('utf-8') if k else None,
-            'retry_backoff_ms': 1000,
-            'retries': 3
+            'bootstrap.servers': 'localhost:9092',
+            'client.id': 'docgodai-backend'
         }
     
-    def get_producer(self) -> KafkaProducer:
+    def get_producer(self):
         """Kafka Producer 인스턴스 가져오기"""
+        if not KAFKA_AVAILABLE:
+            logger.warning("Kafka가 설치되지 않았습니다. 메시지를 로깅으로 대체합니다.")
+            return None
+            
         if self.producer is None:
             try:
-                self.producer = KafkaProducer(**self.kafka_config)
+                self.producer = Producer(self.kafka_config)
                 logger.info("Kafka Producer 연결 성공")
             except Exception as e:
                 logger.error(f"Kafka Producer 연결 실패: {e}")
-                raise
+                return None
         return self.producer
     
-    def get_consumer(self, topics: List[str], group_id: str = "docgodai-backend") -> KafkaConsumer:
+    def get_consumer(self, topics: List[str], group_id: str = "docgodai-backend"):
         """Kafka Consumer 인스턴스 가져오기"""
+        if not KAFKA_AVAILABLE:
+            logger.warning("Kafka가 설치되지 않았습니다.")
+            return None
+            
         try:
             consumer_config = {
-                'bootstrap_servers': ['localhost:9092'],
-                'group_id': group_id,
-                'value_deserializer': lambda m: json.loads(m.decode('utf-8')),
-                'key_deserializer': lambda k: k.decode('utf-8') if k else None,
-                'auto_offset_reset': 'latest',
-                'enable_auto_commit': True
+                'bootstrap.servers': 'localhost:9092',
+                'group.id': group_id,
+                'auto.offset.reset': 'latest'
             }
-            consumer = KafkaConsumer(*topics, **consumer_config)
+            consumer = Consumer(consumer_config)
+            consumer.subscribe(topics)
             logger.info(f"Kafka Consumer 생성 - Topics: {topics}, Group: {group_id}")
             return consumer
         except Exception as e:
             logger.error(f"Kafka Consumer 생성 실패: {e}")
-            raise
+            return None
     
     def send_n8n_request(self, 
                         workflow_type: str, 
@@ -132,26 +141,31 @@ class KafkaManager:
         
         try:
             producer = self.get_producer()
-            future = producer.send(
+            if producer is None:
+                # Kafka 사용 불가 시 로깅으로 대체
+                logger.info(f"[Kafka 미사용] 메시지 발송 - Type: {workflow_type}, "
+                           f"User: {user_id}, Chapter: {chapter_id}, Message: {message}")
+                return message_id
+            
+            # confluent-kafka 방식으로 메시지 발송
+            producer.produce(
                 topic=self.TOPICS["N8N_REQUESTS"],
                 key=message_id,
-                value=message
+                value=json.dumps(message, ensure_ascii=False, default=str)
             )
+            producer.flush()
             
-            # 동기적으로 결과 확인 (선택적)
-            record_metadata = future.get(timeout=10)
-            logger.info(f"메시지 발송 성공 - Topic: {record_metadata.topic}, "
-                       f"Partition: {record_metadata.partition}, "
-                       f"Offset: {record_metadata.offset}")
+            logger.info(f"메시지 발송 성공 - Topic: {self.TOPICS['N8N_REQUESTS']}, "
+                       f"Type: {workflow_type}, Chapter: {chapter_id}")
             
             return message_id
             
-        except KafkaError as e:
-            logger.error(f"Kafka 메시지 발송 실패: {e}")
-            raise
         except Exception as e:
-            logger.error(f"예기치 못한 오류: {e}")
-            raise
+            logger.error(f"Kafka 메시지 발송 실패: {e}")
+            # Kafka 실패 시에도 서버가 중단되지 않도록 로깅만 하고 계속 진행
+            logger.info(f"[Kafka 실패 대체] 메시지 - Type: {workflow_type}, "
+                       f"User: {user_id}, Chapter: {chapter_id}")
+            return message_id
     
     def send_concept_generation_request(self, user_id: int, chapter_id: int, question: str) -> str:
         """컨셉 생성 요청"""
@@ -196,15 +210,21 @@ class KafkaManager:
         
         try:
             producer = self.get_producer()
-            producer.send(
+            if producer is None:
+                logger.info(f"[Kafka 미사용] 콘텐츠 업데이트 알림 - Type: {content_type}, ID: {content_id}")
+                return message_id
+                
+            producer.produce(
                 topic=self.TOPICS["CONTENT_UPDATES"],
                 key=f"{content_type}_{content_id}",
-                value=message
+                value=json.dumps(message, ensure_ascii=False, default=str)
             )
+            producer.flush()
             return message_id
         except Exception as e:
             logger.error(f"콘텐츠 업데이트 알림 발송 실패: {e}")
-            raise
+            logger.info(f"[Kafka 실패 대체] 콘텐츠 업데이트 - Type: {content_type}, ID: {content_id}")
+            return message_id
     
     def close_connections(self):
         """Kafka 연결 종료"""

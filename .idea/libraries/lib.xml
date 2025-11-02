@@ -1,0 +1,66 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-astbuilder-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-docgenerator-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-cli-commons-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-dateutil-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-templates-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-macro-library-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-testng-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-ant-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-datetime-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-testng-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-macro-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-contracts-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-ginq-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-jsr223-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-xml-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-contracts-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-json-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-macro-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-groovysh-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-xml-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-groovydoc-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-jmx-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-templates-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-swing-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-datetime-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-toml-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-nio-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-cli-commons-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-cli-picocli-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-sql-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-swing-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-jmx-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-console-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-macro-library-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-servlet-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-test-junit5-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-console-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-ant-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-ginq-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-sql-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-typecheckers-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-docgenerator-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-test-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-toml-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-json-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-jsr223-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-nio-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-groovydoc-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-test-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-dateutil-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-servlet-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-test-junit5-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-cli-picocli-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-astbuilder-5.0.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-groovysh-5.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/backend/lib/groovy-typecheckers-5.0.0-sources.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

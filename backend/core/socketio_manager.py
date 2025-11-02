@@ -16,6 +16,9 @@ sio = socketio.AsyncServer(
     engineio_logger=True
 )
 
+# ASGI 앱 생성 (FastAPI에 마운트할 용도)
+socket_app = socketio.ASGIApp(sio)
+
 
 @sio.event
 async def connect(sid, environ):

@@ -11,17 +11,24 @@ import redis
 from core.config import settings
 
 # 데이터베이스 URL 생성
-DATABASE_URL = f"{settings.DATABASE_URL}?charset=utf8mb4"
+DATABASE_URL = settings.DATABASE_URL
 
 # SQLAlchemy 엔진 생성
 engine = create_engine(
     DATABASE_URL,
     poolclass=QueuePool,
-    pool_size=10,  # 커넥션 풀 크기
-    max_overflow=20,  # 최대 추가 커넥션
+    pool_size=5,  # 커넥션 풀 크기 (축소)
+    max_overflow=10,  # 최대 추가 커넥션 (축소)
     pool_pre_ping=True,  # 연결 상태 확인
-    pool_recycle=3600,  # 1시간마다 커넥션 재생성
+    pool_recycle=300,  # 5분마다 커넥션 재생성 (MySQL timeout 대비)
+    pool_timeout=30,  # 커넥션 대기 시간
     echo=False,  # SQL 로그 출력 (개발 시 True로 설정)
+    connect_args={
+        "connect_timeout": 10,  # 연결 타임아웃 10초
+        "read_timeout": 30,     # 읽기 타임아웃 30초
+        "write_timeout": 30,    # 쓰기 타임아웃 30초
+        "charset": "utf8mb4"    # 문자셋 명시
+    }
 )
 
 # SessionLocal 클래스 생성

@@ -13,12 +13,12 @@ from datetime import datetime, timezone
 
 router = APIRouter(prefix="/v1/exercise", tags=["exercise"])
 
-
 # 1. 실습 과제 보기
 @router.get("/{chapter_id}", response_model=ExerciseWithChapterResponse)
 def get_exercise(
     chapter_id: int,
-    current_user: dict = Depends(require_auth),
+    title: str,
+    contents: str,
     db: Session = Depends(get_db)
 ):
     """해당 챕터의 실습 과제를 조회합니다."""
@@ -37,6 +37,12 @@ def get_exercise(
 
     if not exercise:
         raise HTTPException(status_code=404, detail="Exercise not found")
+        return ExerciseResponse(
+            chapter_id=chapter_id,
+            title=exercise.title,
+            contents=exercise.contents
+        )
+
 
     return ExerciseWithChapterResponse(
         chapter_id=chapter.id,

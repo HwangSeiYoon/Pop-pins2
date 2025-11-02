@@ -10,6 +10,13 @@ from datetime import datetime
 
 # ==================== Member 스키마 ====================
 
+class SignupResponse(BaseModel):
+    """회원가입 리스폰스"""
+    state: str
+    id: int
+    email: str
+    created_at: datetime
+
 class MemberSignup(BaseModel):
     """회원가입 요청"""
     email: EmailStr
@@ -34,6 +41,7 @@ class MemberResponse(BaseModel):
 
 class LoginResponse(BaseModel):
     """로그인 응답"""
+    state: str  # "success" or "failed"
     access_token: str
     token_type: str = "bearer"
     member: MemberResponse

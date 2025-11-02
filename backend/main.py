@@ -7,17 +7,21 @@ from fastapi.middleware.cors import CORSMiddleware
 import socketio
 import uvicorn
 
-# Router imports (단일 모드: member, chapter, quiz만 사용)
-from member import router as member_router
-from chapter import router as chapter_router
-from quiz import router as quiz_router
+# Router imports
+from api.v1.members.router import router as member_router
+from api.v1.chapters.router import router as chapter_router
+from api.v1.quizzes.router import router as quiz_router
+# from api.v1.auth.router import router as auth_router  # auth는 유틸리티만 있음
+from api.v1.courses.router import router as course_router
+from api.v1.concepts.router import router as concept_router
+from api.v1.exercises.router import router as exercise_router
 
 # Socket.IO
-from socketio_manager import sio
+from core.socketio_manager import sio
 
 # Database initialization
-from database import engine, redis_client
-import models
+from db.database import engine, redis_client
+from db import models
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -40,10 +44,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers (단일 모드: 3개만 사용)
-app.include_router(member_router)   # 회원가입, 로그인
-app.include_router(chapter_router)  # 질문 등록, 학습 페이지 조회
-app.include_router(quiz_router)     # 퀴즈 제출
+# Include routers
+# app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])  # auth는 유틸리티만 있음
+app.include_router(member_router, prefix="/api/v1/members", tags=["members"])
+app.include_router(course_router, prefix="/api/v1/courses", tags=["courses"])
+app.include_router(chapter_router, prefix="/api/v1/chapters", tags=["chapters"])
+app.include_router(concept_router, prefix="/api/v1/concepts", tags=["concepts"])
+app.include_router(exercise_router, prefix="/api/v1/exercises", tags=["exercises"])
+app.include_router(quiz_router, prefix="/api/v1/quizzes", tags=["quizzes"])
 
 # Socket.IO ASGI app 통합
 socket_app = socketio.ASGIApp(sio, app)
@@ -78,8 +86,10 @@ def health_check():
         "api_version": "2.0.0"
     }
 
-@app.post("/api/v1/user/me")
-def 
+@app.get("/api/v1/user/me")
+def get_current_user():
+    """Get current user info"""
+    return {"message": "TODO: Implement user info endpoint"} 
 
 if __name__ == "__main__":
     # Socket.IO와 함께 실행

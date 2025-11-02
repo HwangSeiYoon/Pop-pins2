@@ -6,10 +6,14 @@ Chapter Router (단일 질문-학습 모드)
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import Optional, List
-import schemas
-import models
-from database import get_db
-from socketio_manager import (
+from api.v1.schemas import (
+    ChapterCreate, ChapterCreateResponse, SingleLearningPage, ChapterListItem,
+    ConceptDTO, ExerciseDTO, QuizDTO, ConceptWebhook, ExerciseWebhook, 
+    QuizWebhook, WebhookResponse
+)
+from db import models
+from db.database import get_db
+from core.socketio_manager import (
     emit_chapter_processing_started,
     emit_concept_processing,
     emit_exercise_processing,
@@ -24,8 +28,8 @@ router = APIRouter(prefix="/v1/chapter", tags=["chapter"])
 
 
 # 1. 질문 등록 (챕터 생성)
-@router.post("/", response_model=schemas.ChapterCreateResponse)
-async def create_chapter(chapter: schemas.ChapterCreate, db: Session = Depends(get_db)):
+@router.post("/", response_model=ChapterCreateResponse)
+async def create_chapter(chapter: ChapterCreate, db: Session = Depends(get_db)):
     """
     학생이 질문을 등록합니다.
     질문 1개 → Chapter 1개 → Concept 1개 + Exercise 1개 + Quiz 1개 (빈 값)
@@ -91,7 +95,7 @@ async def create_chapter(chapter: schemas.ChapterCreate, db: Session = Depends(g
     # TODO: Kafka로 AI 생성 요청 전송
     # send_to_kafka(chapter_id=new_chapter.id, title=new_chapter.title)
 
-    return schemas.ChapterCreateResponse(
+    return ChapterCreateResponse(
         chapter_id=new_chapter.id,
         concept_id=new_concept.id,
         exercise_id=new_exercise.id,
@@ -102,7 +106,7 @@ async def create_chapter(chapter: schemas.ChapterCreate, db: Session = Depends(g
 
 
 # 2. 단일 학습 페이지 조회 (한 번에 모든 데이터)
-@router.get("/{chapter_id}/learning", response_model=schemas.SingleLearningPage)
+@router.get("/{chapter_id}/learning", response_model=SingleLearningPage)
 def get_learning_page(chapter_id: int, db: Session = Depends(get_db)):
     """
     단일 학습 페이지 조회
@@ -119,7 +123,7 @@ def get_learning_page(chapter_id: int, db: Session = Depends(get_db)):
     concept = db.query(models.Concept).filter(models.Concept.chapter_id == chapter_id).first()
     concept_dto = None
     if concept:
-        concept_dto = schemas.ConceptDTO(
+        concept_dto = ConceptDTO(
             id=concept.id,
             title=concept.title,
             content=concept.content,
@@ -130,7 +134,7 @@ def get_learning_page(chapter_id: int, db: Session = Depends(get_db)):
     exercise = db.query(models.Exercise).filter(models.Exercise.chapter_id == chapter_id).first()
     exercise_dto = None
     if exercise:
-        exercise_dto = schemas.ExerciseDTO(
+        exercise_dto = ExerciseDTO(
             id=exercise.id,
             question=exercise.question,
             is_complete=exercise.is_complete
@@ -149,14 +153,14 @@ def get_learning_page(chapter_id: int, db: Session = Depends(get_db)):
             else:
                 options = quiz.options
 
-        quiz_dto = schemas.QuizDTO(
+        quiz_dto = QuizDTO(
             id=quiz.id,
             question=quiz.question,
             options=options,
             type=quiz.type.value
         )
 
-    return schemas.SingleLearningPage(
+    return SingleLearningPage(
         chapter_id=chapter.id,
         title=chapter.title,
         description=chapter.description,
@@ -168,7 +172,7 @@ def get_learning_page(chapter_id: int, db: Session = Depends(get_db)):
 
 
 # 3. 챕터 목록 조회
-@router.get("/", response_model=List[schemas.ChapterListItem])
+@router.get("/", response_model=List[ChapterListItem])
 def get_chapters(
     skip: int = 0,
     limit: int = 20,
@@ -185,15 +189,15 @@ def get_chapters(
 
     chapters = query.order_by(models.Chapter.created_at.desc()).offset(skip).limit(limit).all()
 
-    return [schemas.ChapterListItem.from_orm(chapter) for chapter in chapters]
+    return [ChapterListItem.from_orm(chapter) for chapter in chapters]
 
 
 # ==================== N8N Webhook 엔드포인트 ====================
 
-@router.post("/{chapter_id}/concept-finish", response_model=schemas.WebhookResponse)
+@router.post("/{chapter_id}/concept-finish", response_model=WebhookResponse)
 async def concept_finish_webhook(
     chapter_id: int,
-    data: schemas.ConceptWebhook,
+    data: ConceptWebhook,
     db: Session = Depends(get_db)
 ):
     """
@@ -221,17 +225,17 @@ async def concept_finish_webhook(
     # 모든 리소스 완료 확인
     await check_and_emit_all_completed(chapter_id, db)
 
-    return schemas.WebhookResponse(
+    return WebhookResponse(
         status="success",
         message="개념 정리가 성공적으로 저장되었습니다",
         chapter_id=chapter_id
     )
 
 
-@router.post("/{chapter_id}/exercise-finish", response_model=schemas.WebhookResponse)
+@router.post("/{chapter_id}/exercise-finish", response_model=WebhookResponse)
 async def exercise_finish_webhook(
     chapter_id: int,
-    data: schemas.ExerciseWebhook,
+    data: ExerciseWebhook,
     db: Session = Depends(get_db)
 ):
     """
@@ -259,17 +263,17 @@ async def exercise_finish_webhook(
     # 모든 리소스 완료 확인
     await check_and_emit_all_completed(chapter_id, db)
 
-    return schemas.WebhookResponse(
+    return WebhookResponse(
         status="success",
         message="실습 과제가 성공적으로 저장되었습니다",
         chapter_id=chapter_id
     )
 
 
-@router.post("/{chapter_id}/quiz-finish", response_model=schemas.WebhookResponse)
+@router.post("/{chapter_id}/quiz-finish", response_model=WebhookResponse)
 async def quiz_finish_webhook(
     chapter_id: int,
-    data: schemas.QuizWebhook,
+    data: QuizWebhook,
     db: Session = Depends(get_db)
 ):
     """
@@ -301,7 +305,7 @@ async def quiz_finish_webhook(
     # 모든 리소스 완료 확인
     await check_and_emit_all_completed(chapter_id, db)
 
-    return schemas.WebhookResponse(
+    return WebhookResponse(
         status="success",
         message="퀴즈가 성공적으로 저장되었습니다",
         chapter_id=chapter_id

@@ -5,17 +5,17 @@ Quiz Router (단일 퀴즈 제출)
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-import schemas
-import models
-from database import get_db
+from api.v1.schemas import QuizSubmit, QuizSubmitResponse
+from db import models
+from db.database import get_db
 
 router = APIRouter(prefix="/v1/quiz", tags=["quiz"])
 
 
-@router.post("/{chapter_id}/submit", response_model=schemas.QuizSubmitResponse)
+@router.post("/{chapter_id}/submit", response_model=QuizSubmitResponse)
 def submit_quiz(
     chapter_id: int,
-    submission: schemas.QuizSubmit,
+    submission: QuizSubmit,
     db: Session = Depends(get_db)
 ):
     """
@@ -48,7 +48,7 @@ def submit_quiz(
     is_correct = user_answer.lower() == correct_answer.lower()
     score = 100 if is_correct else 0
 
-    return schemas.QuizSubmitResponse(
+    return QuizSubmitResponse(
         is_correct=is_correct,
         score=score,
         explanation=quiz.explanation

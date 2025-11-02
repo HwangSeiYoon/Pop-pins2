@@ -5,6 +5,7 @@ Exercise Router
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+from utils.auth_middleware import require_auth
 # from api.v1.schemas import ExerciseResponse, ExerciseUpdateRequest, ExerciseUpdateResponse  # 스키마 없음
 from db import models
 from db.database import get_db
@@ -15,7 +16,11 @@ router = APIRouter(prefix="/v1/exercise", tags=["exercise"])
 
 # 1. 실습 과제 보기
 @router.get("/{chapter_id}")
-def get_exercise(chapter_id: int, db: Session = Depends(get_db)):
+def get_exercise(
+    chapter_id: int,
+    current_user: dict = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
     """해당 챕터의 실습 과제를 조회합니다."""
     # 챕터의 실습 과제 조회
     exercise = db.query(models.Exercise).filter(

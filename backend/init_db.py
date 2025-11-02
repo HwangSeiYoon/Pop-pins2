@@ -3,7 +3,8 @@ Database initialization script
 Creates all tables based on models.py
 """
 
-from db.database import engine
+from db.database import *
+
 from db import models
 
 def init_database():

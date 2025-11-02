@@ -6,8 +6,8 @@ Member Router
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 import redis
-from api.v1.schemas import schemas
-from db.models import models
+from api.v1.schemas import MemberSignup, MemberLogin, MemberResponse, LoginResponse
+from db import models
 from db.database import get_db, get_redis
 from api.v1.auth.router import get_password_hash, verify_password, create_access_token, get_current_user
 
@@ -18,8 +18,8 @@ TOKEN_EXPIRE_SECONDS = 86400
 
 
 # 1. 회원가입
-@router.post("/signup", response_model=schemas.MemberResponse)
-def signup(member: schemas.MemberSignup, db: Session = Depends(get_db)):
+@router.post("/signup", response_model=MemberResponse)
+def signup(member: MemberSignup, db: Session = Depends(get_db)):
     """새 사용자를 등록합니다."""
     # 이메일 중복 확인
     existing_member = db.query(models.Member).filter(models.Member.email == member.email).first()
@@ -43,9 +43,9 @@ def signup(member: schemas.MemberSignup, db: Session = Depends(get_db)):
 
 
 # 2. 로그인
-@router.post("/login", response_model=schemas.LoginResponse)
+@router.post("/login", response_model=LoginResponse)
 def login(
-    credentials: schemas.MemberLogin,
+    credentials: MemberLogin,
     db: Session = Depends(get_db),
     redis_client: redis.Redis = Depends(get_redis)
 ):
@@ -73,10 +73,10 @@ def login(
     redis_key = f"token:{member.id}"
     redis_client.setex(redis_key, TOKEN_EXPIRE_SECONDS, access_token)
 
-    return schemas.LoginResponse(
+    return LoginResponse(
         access_token=access_token,
         token_type="bearer",
-        member=schemas.MemberResponse(
+        member=MemberResponse(
             id=member.id,
             email=member.email,
             created_at=member.created_at
@@ -85,7 +85,7 @@ def login(
 
 
 # 3. 유저 정보 조회
-@router.get("/", response_model=schemas.MemberResponse)
+@router.get("/", response_model=MemberResponse)
 def get_member_info(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)

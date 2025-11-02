@@ -11,7 +11,7 @@ import uvicorn
 from api.v1.members.router import router as member_router
 from api.v1.chapters.router import router as chapter_router
 from api.v1.quizzes.router import router as quiz_router
-from api.v1.auth.router import router as auth_router
+# from api.v1.auth.router import router as auth_router  # auth는 유틸리티만 있음
 from api.v1.courses.router import router as course_router
 from api.v1.concepts.router import router as concept_router
 from api.v1.exercises.router import router as exercise_router
@@ -45,7 +45,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
+# app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])  # auth는 유틸리티만 있음
 app.include_router(member_router, prefix="/api/v1/members", tags=["members"])
 app.include_router(course_router, prefix="/api/v1/courses", tags=["courses"])
 app.include_router(chapter_router, prefix="/api/v1/chapters", tags=["chapters"])

@@ -26,8 +26,12 @@ if [ $retry_count -eq $max_retries ]; then
   exit 1
 fi
 
-# workflows 폴더의 모든 JSON 파일 import
-echo "Starting workflow import..."
+# workflows 폴더의 모든 JSON 파일 import 및 활성화
+echo "Starting workflow import and activation..."
+
+# 임포트된 워크플로우 ID를 저장할 배열
+imported_workflow_ids=""
+
 for workflow_file in ./workflows/*.json; do
   if [ -f "$workflow_file" ]; then
     echo "Importing workflow: $(basename $workflow_file)"
@@ -39,6 +43,13 @@ for workflow_file in ./workflows/*.json; do
     
     if [ $? -eq 0 ]; then
       echo "✓ Successfully imported: $(basename $workflow_file)"
+      
+      # 응답에서 워크플로우 ID 추출 (JSON 파싱)
+      workflow_id=$(echo "$response" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+      if [ -n "$workflow_id" ]; then
+        imported_workflow_ids="$imported_workflow_ids $workflow_id"
+        echo "  → Workflow ID: $workflow_id"
+      fi
     else
       echo "✗ Failed to import: $(basename $workflow_file)"
       echo "Error: $response"
@@ -46,7 +57,35 @@ for workflow_file in ./workflows/*.json; do
   fi
 done
 
-echo "All workflows processed!"
+echo "All workflows imported!"
+
+# 모든 임포트된 워크플로우 활성화
+if [ -n "$imported_workflow_ids" ]; then
+  echo "Activating all imported workflows..."
+  
+  for workflow_id in $imported_workflow_ids; do
+    echo "Activating workflow ID: $workflow_id"
+    
+    # 워크플로우 활성화 API 호출
+    activate_response=$(wget -q -O- --method=PATCH \
+      --header="Content-Type: application/json" \
+      --body-data='{"active": true}' \
+      "http://localhost:5678/api/v1/workflows/$workflow_id" 2>&1)
+    
+    if [ $? -eq 0 ]; then
+      echo "✓ Successfully activated workflow: $workflow_id"
+    else
+      echo "✗ Failed to activate workflow: $workflow_id"
+      echo "Error: $activate_response"
+    fi
+  done
+  
+  echo "All workflows activated!"
+else
+  echo "No workflows to activate"
+fi
+
+echo "Workflow setup completed!"
 
 # n8n을 foreground로 유지
 wait $N8N_PID

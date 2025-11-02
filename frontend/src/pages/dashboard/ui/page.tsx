@@ -1,15 +1,12 @@
 import { motion } from "framer-motion";
+import { useAtomValue } from "jotai";
 import { BookOpenTextIcon, CircleCheckIcon } from "lucide-react";
 
 import CourseCard from "@/pages/dashboard/ui/course-card.tsx";
 import NewCourse from "@/pages/dashboard/ui/new-course.tsx";
 import { Card, Section } from "@/shared/ui";
 
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4 },
-};
+import { courseListAtom } from "../store";
 
 const staggerContainer = {
   initial: { opacity: 0 },
@@ -31,6 +28,8 @@ const staggerItem = {
 };
 
 const DashboardPage = () => {
+  const courseList = useAtomValue(courseListAtom);
+
   return (
     <Section
       subtitle="진행중인 모든 학습을 한눈에 관리하세요"
@@ -47,7 +46,7 @@ const DashboardPage = () => {
           { label: "완료", value: null },
           { label: "주간 학습(가)", value: null },
           { label: "평균 정답률", value: null },
-        ].map((stat, index) => (
+        ].map((stat) => (
           <motion.div key={stat.label} variants={staggerItem}>
             <Card className="p-6">
               <div className="text-default-500 text-sm">{stat.label}</div>
@@ -71,9 +70,13 @@ const DashboardPage = () => {
         initial="initial"
         variants={staggerContainer}
       >
-        <motion.div variants={staggerItem}>
-          <CourseCard description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris n" />
-        </motion.div>
+        {courseList.map((course) => {
+          return (
+            <motion.div key={course.id} variants={staggerItem}>
+              <CourseCard course={course} />
+            </motion.div>
+          );
+        })}
         <motion.div variants={staggerItem}>
           <NewCourse />
         </motion.div>

@@ -1,10 +1,11 @@
 import { Button, Form, tv } from "@heroui/react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeftIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { ROUTE } from "@/shared/constants";
 import { Card, HookFormTextarea, Section } from "@/shared/ui";
 
 const style = tv({
@@ -23,23 +24,30 @@ interface QuizQuestion {
 }
 
 interface QuizPageProps {
+  chapterId: string;
   questions?: QuizQuestion[];
 }
 
-const QuizPage = ({ questions }: QuizPageProps) => {
+const QuizPage = ({ chapterId, questions }: QuizPageProps) => {
+  const navigate = useNavigate();
+
   // 기본 예시 데이터 (실제로는 API에서 받아올 것)
+  // 챕터 4: "분산의 실전 활용" 주제에 맞춘 문제
   const defaultQuestions: QuizQuestion[] = [
     {
       id: 1,
-      question: "표준편차를 구하는 식에서 루트를 씌우는 이유는 무엇인가요?",
+      question:
+        "실제 데이터 분석에서 분산이 큰 값을 가진 경우, 이를 어떻게 해석하고 활용할 수 있나요?",
     },
     {
       id: 2,
-      question: "분산과 표준편차의 차이점을 설명해주세요.",
+      question:
+        "다양한 상황에서 분산을 계산할 때 고려해야 할 주요 요소들은 무엇인가요?",
     },
     {
       id: 3,
-      question: "표준편차가 큰 데이터셋과 작은 데이터셋의 의미는 무엇인가요?",
+      question:
+        "분산을 활용한 실제 데이터 분석 사례에서, 분산의 값이 작을 때와 클 때 각각 어떤 의미를 가지나요?",
     },
   ];
 
@@ -74,7 +82,9 @@ const QuizPage = ({ questions }: QuizPageProps) => {
 
   const onSubmit = async (data: QuizFormData) => {
     // TODO: API로 답변 제출
-    console.log("Submitted answers:", data.answers);
+    console.debug(data.answers);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    navigate({ to: ROUTE.quizResult, params: { chapterId } });
     // 제출 후 결과 페이지로 이동하거나 피드백 표시
   };
 

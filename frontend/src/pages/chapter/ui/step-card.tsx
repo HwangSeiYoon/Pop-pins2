@@ -1,5 +1,7 @@
 import { Button, tv } from "@heroui/react";
+import { useNavigate } from "@tanstack/react-router";
 
+import { ROUTE } from "@/shared/constants";
 import { Card } from "@/shared/ui";
 
 const style = tv({
@@ -25,10 +27,26 @@ const style = tv({
 });
 
 interface Props {
-  isActive?: boolean;
+  content: Content;
+  index: number;
+  isActive: boolean;
 }
 
-const StepCard = ({ isActive }: Props) => {
+const getTypeText = (type: Content["type"]) => {
+  switch (type) {
+    case "concept":
+      return "개념 정리";
+    case "exercise":
+      return "실습 과제";
+    case "quiz":
+      return "퀴즈";
+    default:
+      return "";
+  }
+};
+
+const StepCard = ({ content, index, isActive }: Props) => {
+  const navigate = useNavigate();
   const styles = style({ isActive });
 
   return (
@@ -36,15 +54,18 @@ const StepCard = ({ isActive }: Props) => {
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-4">
           <span className="flex items-center gap-3">
-            <div className={styles.index()}>{1}</div>
+            <div className={styles.index()}>{index}</div>
             <div>
-              <p className="text-default-500 text-sm">개념정리</p>
-              <h4 className={styles.title()}>제목</h4>
+              <p className="text-default-500 text-sm">
+                {getTypeText(content.type)}
+              </p>
+              <h4 className={styles.title()}>{content.title}</h4>
             </div>
           </span>
           <ul className={styles.description()}>
-            <li>설명 1</li>
-            <li>설명 2</li>
+            {content.description.map((description) => (
+              <li key={description}>{description}</li>
+            ))}
           </ul>
         </div>
         <div className="flex items-center gap-2">
@@ -53,8 +74,9 @@ const StepCard = ({ isActive }: Props) => {
             radius="full"
             size="sm"
             variant={isActive ? "solid" : "ghost"}
+            onPress={() => navigate({ to: ROUTE[content.type] })}
           >
-            {isActive ? "시작" : "완료"}
+            {content.isCompleted ? "다시보기" : "학습하기"}
           </Button>
         </div>
       </div>

@@ -1,3 +1,10 @@
 export const login = "/login" as const;
 export const signup = "/signup" as const;
 export const dashboard = "/study" as const;
+export const create = "/create" as const;
+export const course = "/study/$courseId" as const;
+export const chapter = "/lesson/$chapterId" as const;
+export const concept = "/lesson/$chapterId/concept" as const;
+export const exercise = "/lesson/$chapterId/exercise" as const;
+export const quiz = "/lesson/$chapterId/quiz" as const;
+export const quizResult = "/lesson/$chapterId/result" as const;

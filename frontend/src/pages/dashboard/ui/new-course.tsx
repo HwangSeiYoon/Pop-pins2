@@ -1,6 +1,8 @@
+import { useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { CirclePlusIcon } from "lucide-react";
 
+import { ROUTE } from "@/shared/constants";
 import {
   Card,
   Empty,
@@ -10,11 +12,14 @@ import {
 } from "@/shared/ui";
 
 const NewCourse = () => {
+  const navigate = useNavigate();
+
   return (
     <motion.div transition={{ duration: 0.2 }}>
       <Card
         isPressable
         className="hover:bg-content2 w-full border-2 border-dashed shadow-none hover:shadow-none"
+        onPress={() => navigate({ to: ROUTE.create })}
       >
         <Empty>
           <EmptyHeader>

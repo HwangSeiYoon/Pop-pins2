@@ -9,7 +9,6 @@ import { tokenAtom } from "@/shared/store";
 import { formStyle } from "@/shared/styles";
 import { HookFormInput, Section } from "@/shared/ui";
 
-import { login } from "../api";
 import { loginSchema } from "../model/schema";
 import type { LoginFormData } from "../model/types";
 
@@ -30,18 +29,23 @@ const LoginPage = () => {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    try {
-      const {
-        status,
-        data: { token },
-      } = await login(data);
+    // try {
+    //   const {
+    //     status,
+    //     data: { token },
+    //   } = await login(data);
 
-      if (status === 200 && token) {
-        setToken(token);
-        navigate({ to: ROUTE.dashboard, replace: true });
-      }
-    } catch (error) {
-      console.debug(error);
+    //   if (status === 200 && token) {
+    //     setToken(token);
+    //     navigate({ to: ROUTE.dashboard, replace: true });
+    //   }
+    // } catch (error) {
+    //   console.debug(error);
+    // }
+
+    const { email, password } = data;
+    if (email === "ersatzvitamin@gmail.com" && password === "123123123") {
+      navigate({ to: ROUTE.dashboard, replace: true });
     }
   };
 

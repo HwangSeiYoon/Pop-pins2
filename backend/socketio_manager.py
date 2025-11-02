@@ -73,6 +73,38 @@ async def leave_chapter(sid, data):
         print(f"Client {sid} left room: {room}")
 
 
+@sio.event
+async def join_course(sid, data):
+    """
+    특정 코스 룸에 조인
+    클라이언트가 특정 코스의 업데이트를 받기 위해 호출
+
+    Args:
+        data: {"course_id": int}
+    """
+    course_id = data.get('course_id')
+    if course_id:
+        room = f"course_{course_id}"
+        await sio.enter_room(sid, room)
+        print(f"Client {sid} joined room: {room}")
+        await sio.emit('joined', {'room': room}, room=sid)
+
+
+@sio.event
+async def leave_course(sid, data):
+    """
+    특정 코스 룸에서 나가기
+
+    Args:
+        data: {"course_id": int}
+    """
+    course_id = data.get('course_id')
+    if course_id:
+        room = f"course_{course_id}"
+        await sio.leave_room(sid, room)
+        print(f"Client {sid} left room: {room}")
+
+
 # ============================================
 # Emit 함수들 (서버에서 클라이언트로 전송)
 # ============================================
@@ -128,6 +160,20 @@ async def emit_quiz_graded(chapter_id: int, data: Dict[str, Any]):
     room = f"chapter_{chapter_id}"
     await sio.emit('quiz-graded', data, room=room)
     print(f"Emitted quiz-graded to room: {room}")
+
+
+async def emit_course_generated(course_id: int, data: Dict[str, Any]):
+    """
+    강의 생성 완료 알림
+    Gemini가 챕터를 생성한 후 실시간으로 결과 전송
+
+    Args:
+        course_id: 코스 ID
+        data: 전송할 데이터 (course_id, chapters 등)
+    """
+    room = f"course_{course_id}"
+    await sio.emit('course-generated', data, room=room)
+    print(f"Emitted course-generated to room: {room}")
 
 
 async def emit_chapter_complete(chapter_id: int, data: Dict[str, Any]):

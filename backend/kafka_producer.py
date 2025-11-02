@@ -11,6 +11,7 @@ from kafka.errors import KafkaError
 
 # Kafka 설정
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+KAFKA_TOPIC_COURSE_GENERATE = "course-generate"
 KAFKA_TOPIC_CHAPTER_CREATED = "chapter-created"
 KAFKA_TOPIC_CONCEPT_CREATED = "concept-created"
 KAFKA_TOPIC_EXERCISE_CREATED = "exercise-created"
@@ -39,6 +40,64 @@ def get_kafka_producer() -> KafkaProducer:
             max_in_flight_requests_per_connection=1  # 순서 보장
         )
     return _producer
+
+
+def send_course_generate_event(
+    course_id: int,
+    course_title: str,
+    course_description: str,
+    prompt: str,
+    maxchapters: int,
+    link: list,
+    difficulty: str,
+    owner_id: int
+) -> bool:
+    """
+    강의 생성 이벤트 발행
+    N8N이 이 이벤트를 받아서 Gemini에게 챕터 생성 요청
+
+    Args:
+        course_id: 코스 ID
+        course_title: 코스 제목
+        course_description: 코스 설명
+        prompt: 사용자 프롬프트
+        maxchapters: 최대 챕터 수
+        link: 참고 링크 리스트
+        difficulty: 난이도
+        owner_id: 소유자 ID
+
+    Returns:
+        성공 여부
+    """
+    try:
+        producer = get_kafka_producer()
+
+        event_data = {
+            "course_id": course_id,
+            "courseTitle": course_title,
+            "courseDescription": course_description,
+            "prompt": prompt,
+            "maxchapters": maxchapters,
+            "link": link,
+            "difficulty": difficulty,
+            "owner_id": owner_id,
+            "event_type": "course_generate"
+        }
+
+        future = producer.send(
+            KAFKA_TOPIC_COURSE_GENERATE,
+            key=f"course_{course_id}",
+            value=event_data
+        )
+
+        # 메시지 전송 완료 대기 (타임아웃 5초)
+        record_metadata = future.get(timeout=5)
+        print(f"Sent course_generate event: {record_metadata.topic}:{record_metadata.partition}:{record_metadata.offset}")
+        return True
+
+    except KafkaError as e:
+        print(f"Failed to send course_generate event: {e}")
+        return False
 
 
 def send_chapter_created_event(

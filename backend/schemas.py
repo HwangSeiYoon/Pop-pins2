@@ -64,12 +64,49 @@ class ChapterBasic(BaseModel):
     title: str
 
 
-class CourseDetailResponse(BaseModel):
+# 강의 상세 보기용 챕터 정보
+class ChapterDetailForCourse(BaseModel):
     id: int
     title: str
     description: str
+    is_created: bool  # concept, exercise, quiz가 모두 생성되었는지
+    completionCount: int  # 개념정리, 실습과제, 형성평가 완료 개수 (0~3)
+
+
+class CourseDetailResponse(BaseModel):
+    courseTitle: str
+    courseDescription: str
     difficulty: str
-    chapters: List[ChapterBasic]
+    chapters: List[ChapterDetailForCourse]
+
+
+# 강의 생성 요청 (Gemini가 자동으로 챕터 생성)
+class CourseGenerateRequest(BaseModel):
+    courseTitle: str
+    courseDescription: str
+    prompt: str
+    maxchapters: int
+    link: List[str]
+    difficulty: str
+
+
+# 강의 생성 응답 (즉시 응답)
+class CourseGenerateImmediateResponse(BaseModel):
+    status: str  # "submitted"
+    message: str
+    course_id: int
+
+
+# Gemini가 생성한 챕터 정보
+class GeneratedChapterInfo(BaseModel):
+    chapterId: int
+    chapterTitle: str
+    chapterDescription: str
+
+
+# Gemini가 생성한 강의 전체 정보 (Webhook으로 받음)
+class WebhookCourseGenerateResponse(BaseModel):
+    course: dict  # {"id": int, "chapters": List[GeneratedChapterInfo]}
 
 
 # ============================================
@@ -132,9 +169,9 @@ class ChapterDetailResponse(BaseModel):
 # ============================================
 
 class ConceptResponse(BaseModel):
-    chapter_id: int
     title: str
-    content: str
+    contents: str
+    chapter_id: int
 
 
 class ConceptComplete(BaseModel):
@@ -189,7 +226,7 @@ class QuizSubmitContent(BaseModel):
 
 
 class QuizSubmitResponse(BaseModel):
-
+    pass
 
 
 class QuizComplete(BaseModel):

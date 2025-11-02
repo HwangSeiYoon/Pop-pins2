@@ -8,14 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import uvicorn
 
-# 라우터 import
-import member
-import course
-import chapter
-import concept
-import exercise
-import quiz
-import webhook
+# 라우터 import (api/v1 구조 사용)
+from api.v1.members import router as members_router
+from api.v1.courses import router as courses_router
+from api.v1.chapters import router as chapters_router
+from api.v1.concepts import router as concepts_router
+from api.v1.exercises import router as exercises_router
+from api.v1.quizzes import router as quizzes_router
+# from api.v1.webhooks import router as webhooks_router  # TODO: webhook router 구현 필요
 
 # Socket.IO import
 from socketio_manager import socket_app, sio
@@ -55,13 +55,13 @@ app.add_middleware(
 )
 
 # 라우터 등록
-app.include_router(member.router)
-app.include_router(course.router)
-app.include_router(chapter.router)
-app.include_router(concept.router)
-app.include_router(exercise.router)
-app.include_router(quiz.router)
-app.include_router(webhook.router)
+app.include_router(members_router.router)
+app.include_router(courses_router.router)
+app.include_router(chapters_router.router)
+app.include_router(concepts_router.router)
+app.include_router(exercises_router.router)
+app.include_router(quizzes_router.router)
+# app.include_router(webhooks_router.router)  # TODO: webhook router 구현 필요
 
 
 @app.get("/")

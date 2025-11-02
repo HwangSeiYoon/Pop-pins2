@@ -18,7 +18,18 @@ router = APIRouter(prefix="/v1/course", tags=["course"])
 def get_course_list(db: Session = Depends(get_db)):
     """등록된 모든 강의 목록을 조회합니다."""
     courses = db.query(models.Course).all()
-    return {"courses": [course.__dict__ for course in courses]}
+
+    return [
+        {
+            "id": course.id,
+            "title": course.title,
+            "description": course.description,
+            "difficulty": course.difficulty,
+            "owner_id": course.owner_id,
+            "created_at": course.created_at.isoformat() if course.created_at else None
+        }
+        for course in courses
+    ]
 
 
 # 2. 강의 생성

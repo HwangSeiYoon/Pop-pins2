@@ -8,9 +8,105 @@ from sqlalchemy.orm import Session
 import schemas
 import models
 from database import get_db
-from socketio_manager import emit_concept_finish, emit_exercise_finish, emit_quiz_finish, emit_quiz_graded
+from socketio_manager import emit_concept_finish, emit_exercise_finish, emit_quiz_finish, emit_quiz_graded, emit_course_generated
 
 router = APIRouter(prefix="/webhook", tags=["webhook"])
+
+
+@router.post("/course-generate-finish")
+async def course_generate_finish_webhook(
+    course_data: schemas.WebhookCourseGenerateResponse,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    강의 생성 완료 Webhook
+    N8N이 Gemini로부터 챕터 정보를 받아서 이 엔드포인트로 전송
+
+    흐름:
+    1. 클라이언트가 강의 생성 요청 → Kafka 이벤트 발행
+    2. N8N이 Kafka 이벤트 수신 → Gemini에게 챕터 생성 요청
+    3. Gemini 완료 → N8N이 이 Webhook 호출
+    4. DB에 챕터 저장 후 Socket.IO로 클라이언트에게 실시간 알림
+
+    Args:
+        course_data: Gemini가 생성한 챕터 정보
+    """
+    try:
+        course_id = course_data.course.get("id")
+        chapters_data = course_data.course.get("chapters", [])
+
+        # 코스 조회
+        course = db.query(models.Course).filter(models.Course.id == course_id).first()
+        if not course:
+            raise HTTPException(status_code=404, detail=f"Course {course_id} not found")
+
+        # 챕터 생성
+        created_chapters = []
+        for chapter_info in chapters_data:
+            # 챕터 생성
+            new_chapter = models.Chapter(
+                course_id=course_id,
+                title=chapter_info.get("chapterTitle"),
+                description=chapter_info.get("chapterDescription"),
+                order_num=chapter_info.get("chapterId"),
+                owner_id=course.owner_id
+            )
+            db.add(new_chapter)
+            db.flush()  # ID 생성
+
+            # Concept, Exercise, Quiz 빈 레코드 생성 (is_available=False)
+            concept = models.Concept(
+                chapter_id=new_chapter.id,
+                is_available=False,
+                is_complete=False
+            )
+            exercise = models.Exercise(
+                chapter_id=new_chapter.id,
+                is_available=False,
+                is_complete=False
+            )
+            db.add(concept)
+            db.add(exercise)
+
+            # 퀴즈 3개 생성
+            for i in range(1, 4):
+                quiz = models.Quiz(
+                    chapter_id=new_chapter.id,
+                    is_available=False,
+                    is_complete=False
+                )
+                db.add(quiz)
+
+            created_chapters.append({
+                "chapter_id": new_chapter.id,
+                "chapter_title": new_chapter.title,
+                "chapter_description": new_chapter.description
+            })
+
+        db.commit()
+
+        # Socket.IO로 클라이언트에게 실시간 알림
+        await emit_course_generated(
+            course_id=course_id,
+            data={
+                "course_id": course_id,
+                "chapters": created_chapters,
+                "status": "completed",
+                "message": f"{len(created_chapters)}개의 챕터가 생성되었습니다."
+            }
+        )
+
+        return {
+            "status": "success",
+            "message": f"{len(created_chapters)} chapters created successfully",
+            "course_id": course_id,
+            "chapters": created_chapters
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/concept-finish")

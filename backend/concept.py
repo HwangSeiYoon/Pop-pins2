@@ -26,13 +26,13 @@ def get_concept_summary(chapter_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Concept for chapter {chapter_id} not found")
 
     return schemas.ConceptResponse(
-        chapter_id=concept.chapter_id,
-        title=concept.title,
-        content=concept.content or "",
+        title=concept.title or "",
+        contents=concept.content or "",
+        chapter_id=concept.chapter_id
     )
 
 
-@router.patch("/{chapter_id}", response_model=schemas.ConceptCompleteResponse)
+@router.patch("/{chapter_id}", status_code=204)
 def complete_concept_summary(
     chapter_id: int,
     db: Session = Depends(get_db)
@@ -40,6 +40,7 @@ def complete_concept_summary(
     """
     개념 학습 완료
     학습 완료로 상태를 변경합니다.
+    URI의 chapter_id로 해당 챕터의 개념정리를 찾아 is_complete를 True로 설정합니다.
     """
     # 챕터의 개념정리 조회
     concept = db.query(models.Concept).filter(models.Concept.chapter_id == chapter_id).first()
@@ -50,9 +51,3 @@ def complete_concept_summary(
     # 완료 상태 업데이트
     concept.is_complete = True
     db.commit()
-
-    return schemas.ConceptCompleteResponse(
-        chapter_id=chapter_id,
-        is_complete=True,
-        updated_at=datetime.utcnow()
-    )

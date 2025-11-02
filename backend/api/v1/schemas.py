@@ -67,6 +67,21 @@ class ConceptDTO(BaseModel):
     content: Optional[str] = None
     is_complete: bool
 
+class ExerciseResponse(BaseModel):
+    """실습 과제 응답"""
+    id: int
+    title: Optional[str] = None
+    contents: Optional[str] = None
+    is_complete: bool
+
+
+class ExerciseWithChapterResponse(BaseModel):
+    """챕터 정보를 포함한 실습 과제 응답"""
+    chapter_id: int
+    chapter_title: str
+    chapter_contents: Optional[str] = None
+    exercise: ExerciseResponse
+
 
 class ExerciseDTO(BaseModel):
     """연습문제 DTO"""

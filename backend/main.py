@@ -46,12 +46,12 @@ app.add_middleware(
 
 # Include routers
 # app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])  # auth는 유틸리티만 있음
-app.include_router(member_router, prefix="/api/v1/members", tags=["members"])
-app.include_router(course_router, prefix="/api/v1/courses", tags=["courses"])
-app.include_router(chapter_router, prefix="/api/v1/chapters", tags=["chapters"])
-app.include_router(concept_router, prefix="/api/v1/concepts", tags=["concepts"])
-app.include_router(exercise_router, prefix="/api/v1/exercises", tags=["exercises"])
-app.include_router(quiz_router, prefix="/api/v1/quizzes", tags=["quizzes"])
+app.include_router(member_router, prefix="/", tags=["members"])
+app.include_router(course_router, prefix="/", tags=["courses"])
+app.include_router(chapter_router, prefix="/", tags=["chapters"])
+app.include_router(concept_router, prefix="/", tags=["concepts"])
+app.include_router(exercise_router, prefix="/", tags=["exercises"])
+app.include_router(quiz_router, prefix="/", tags=["quizzes"])
 
 # Socket.IO ASGI app 통합
 socket_app = socketio.ASGIApp(sio, app)

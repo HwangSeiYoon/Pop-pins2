@@ -4,16 +4,6 @@ networks:
   poppins-network:
     driver: bridge
 
-volumes:
-  volume-n8n:
-    driver: local
-  volume-mysql:
-    driver: local
-  volume-kafka:
-    driver: local
-  volume-redis:
-    driver: local
-
 services:
   n8n:
     container_name: n8n
@@ -28,12 +18,14 @@ services:
     ports:
       - "${N8N_PORT}:5678"
     volumes:
-      - volume-n8n:/home/node/.n8n
+      - ./volume-n8n:/home/node/.n8n
       - ./workflows:/workflows
       - ./init-workflows.sh:/init-workflows.sh
     entrypoint: /bin/sh
     command: /init-workflows.sh
     restart: always
+    networks:
+      - poppins-network
 
   mysql:
     container_name: mysql
@@ -47,7 +39,7 @@ services:
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:
-      - volume-mysql:/var/lib/mysql
+      - ./volume-mysql:/var/lib/mysql
       - ./init-data.sh:/docker-entrypoint-initdb.d/init-data.sh
       - ./my.cnf:/etc/mysql/conf.d/my.cnf
     healthcheck:
@@ -72,7 +64,7 @@ services:
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
     volumes:
-      - volume-kafka:/bitnami/kafka
+      - ./volume-kafka:/bitnami/kafka
     networks:
       - poppins-network
 
@@ -83,7 +75,7 @@ services:
       - ${REDIS_PORT}:6379
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
-      - volume-redis:/data
+      - ./volume-redis:/data
       - ./redis.conf:/usr/local/etc/redis/redis.conf
     networks:
       - poppins-network

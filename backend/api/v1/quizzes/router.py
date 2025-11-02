@@ -5,6 +5,7 @@ Quiz Router (단일 퀴즈 제출)
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+from utils.auth_middleware import require_auth
 from api.v1.schemas import QuizSubmit, QuizSubmitResponse
 from db import models
 from db.database import get_db
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/v1/quiz", tags=["quiz"])
 def submit_quiz(
     chapter_id: int,
     submission: QuizSubmit,
+    current_user: dict = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """

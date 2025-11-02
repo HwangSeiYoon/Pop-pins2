@@ -9,7 +9,8 @@ import redis
 from api.v1.schemas import MemberSignup, MemberLogin, MemberResponse, LoginResponse
 from db import models
 from db.database import get_db, get_redis
-from api.v1.auth.router import get_password_hash, verify_password, create_access_token, get_current_user
+from api.v1.auth.router import get_password_hash, verify_password, create_access_token
+from utils.auth_middleware import require_auth
 
 router = APIRouter(prefix="/v1/member", tags=["member"])
 
@@ -87,7 +88,7 @@ def login(
 # 3. 유저 정보 조회
 @router.get("/", response_model=MemberResponse)
 def get_member_info(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """로그인된 사용자 정보를 반환합니다. (헤더에 Authorization: Bearer <token> 필요)"""
@@ -102,7 +103,7 @@ def get_member_info(
 # 4. 로그아웃
 @router.post("/logout")
 def logout(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_auth),
     redis_client: redis.Redis = Depends(get_redis)
 ):
     """

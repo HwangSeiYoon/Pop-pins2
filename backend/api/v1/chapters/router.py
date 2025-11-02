@@ -6,6 +6,7 @@ Chapter Router (단일 질문-학습 모드)
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import Optional, List
+from utils.auth_middleware import require_auth
 from api.v1.schemas import (
     ChapterCreate, ChapterCreateResponse, SingleLearningPage, ChapterListItem,
     ConceptDTO, ExerciseDTO, QuizDTO, ConceptWebhook, ExerciseWebhook, 
@@ -29,7 +30,11 @@ router = APIRouter(prefix="/v1/chapter", tags=["chapter"])
 
 # 1. 질문 등록 (챕터 생성)
 @router.post("/", response_model=ChapterCreateResponse)
-async def create_chapter(chapter: ChapterCreate, db: Session = Depends(get_db)):
+async def create_chapter(
+    chapter: ChapterCreate,
+    current_user: dict = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
     """
     학생이 질문을 등록합니다.
     질문 1개 → Chapter 1개 → Concept 1개 + Exercise 1개 + Quiz 1개 (빈 값)
@@ -107,7 +112,11 @@ async def create_chapter(chapter: ChapterCreate, db: Session = Depends(get_db)):
 
 # 2. 단일 학습 페이지 조회 (한 번에 모든 데이터)
 @router.get("/{chapter_id}/learning", response_model=SingleLearningPage)
-def get_learning_page(chapter_id: int, db: Session = Depends(get_db)):
+def get_learning_page(
+    chapter_id: int,
+    current_user: dict = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
     """
     단일 학습 페이지 조회
     Chapter + Concept + Exercise + Quiz를 한 번에 조회
@@ -177,6 +186,7 @@ def get_chapters(
     skip: int = 0,
     limit: int = 20,
     owner_id: Optional[int] = None,
+    current_user: dict = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """

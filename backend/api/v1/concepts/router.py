@@ -5,6 +5,7 @@ Concept Router
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+from utils.auth_middleware import require_auth
 # from api.v1.schemas import ConceptResponse, ConceptUpdateRequest, ConceptUpdateResponse  # 스키마 없음
 from db import models
 from db.database import get_db
@@ -15,7 +16,11 @@ router = APIRouter(prefix="/v1/concept", tags=["concept"])
 
 # 1. 개념 정리 보기
 @router.get("/{chapter_id}")
-def get_concept(chapter_id: int, db: Session = Depends(get_db)):
+def get_concept(
+    chapter_id: int,
+    current_user: dict = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
     """해당 챕터의 개념 정리 내용을 조회합니다."""
     # 챕터의 개념 정리 조회
     concept = db.query(models.Concept).filter(

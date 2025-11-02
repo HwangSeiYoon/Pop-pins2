@@ -18,7 +18,7 @@ from api.v1.quizzes import router as quizzes_router
 # from api.v1.webhooks import router as webhooks_router  # TODO: webhook router 구현 필요
 
 # Socket.IO import
-from socketio_manager import socket_app, sio
+from core.socketio_manager import socket_app, sio
 
 # Kafka producer import
 from kafka_producer import close_kafka_producer
@@ -31,6 +31,15 @@ async def lifespan(app: FastAPI):
     """
     # 시작 시
     print("Starting FastAPI application...")
+    
+    # 데이터베이스 초기화
+    try:
+        from db.database import init_db
+        init_db()
+        print("Database initialized successfully!")
+    except Exception as e:
+        print(f"Database initialization failed: {e}")
+    
     yield
     # 종료 시
     print("Shutting down FastAPI application...")
@@ -62,34 +71,6 @@ app.include_router(concepts_router.router)
 app.include_router(exercises_router.router)
 app.include_router(quizzes_router.router)
 # app.include_router(webhooks_router.router)  # TODO: webhook router 구현 필요
-
-
-@app.get("/")
-def root():
-    """
-    헬스 체크 엔드포인트
-    """
-    return {
-        "status": "ok",
-        "message": "AI Learning Platform API is running",
-        "version": "1.0.0"
-    }
-
-
-@app.get("/health")
-def health_check():
-    """
-    상세 헬스 체크
-    """
-    return {
-        "status": "healthy",
-        "services": {
-            "api": "running",
-            "socket_io": "running",
-            "kafka": "connected"
-        }
-    }
-
 
 # Socket.IO를 FastAPI에 마운트
 app.mount("/socket.io", socket_app)

@@ -7,27 +7,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 from typing import Generator
-import os
-from dotenv import load_dotenv
 import redis
-
-# .env 파일 로드
-load_dotenv()
-
-# 환경 변수에서 데이터베이스 설정 가져오기
-DB_USER = os.getenv("DB_USER", "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "")
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "3306")
-DB_NAME = os.getenv("DB_NAME", "your_database_name")
-
-# Redis 설정
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_DB = int(os.getenv("REDIS_DB", 0))
+from core.config import settings
 
 # 데이터베이스 URL 생성
-DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
+DATABASE_URL = f"{settings.DATABASE_URL}?charset=utf8mb4"
 
 # SQLAlchemy 엔진 생성
 engine = create_engine(
@@ -49,9 +33,9 @@ SessionLocal = sessionmaker(
 
 # Redis 클라이언트 생성
 redis_client = redis.Redis(
-    host=REDIS_HOST,
-    port=REDIS_PORT,
-    db=REDIS_DB,
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    db=settings.REDIS_DB,
     decode_responses=True  # 문자열로 자동 디코딩
 )
 
@@ -85,7 +69,7 @@ def init_db():
         from database import init_db
         init_db()
     """
-    from models import Base
+    from db.models import Base
     Base.metadata.create_all(bind=engine)
     print("Database tables created successfully!")
 
@@ -98,7 +82,7 @@ def drop_db():
         from database import drop_db
         drop_db()
     """
-    from models import Base
+    from db.models import Base
     Base.metadata.drop_all(bind=engine)
     print("All database tables dropped!")
 

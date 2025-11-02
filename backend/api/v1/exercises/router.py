@@ -5,9 +5,9 @@ Exercise Router
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-import schemas
-import models
-from database import get_db
+from api.v1.schemas import schemas
+from db.models import models
+from db.database import get_db
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/v1/exercise", tags=["exercise"])

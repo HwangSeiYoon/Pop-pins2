@@ -6,10 +6,10 @@ Chapter Router (단일 질문-학습 모드)
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import Optional, List
-import schemas
-import models
-from database import get_db
-from socketio_manager import (
+from api.v1.schemas import schemas
+from db.models import models
+from db.database import get_db
+from core.socketio_manager import (
     emit_chapter_processing_started,
     emit_concept_processing,
     emit_exercise_processing,

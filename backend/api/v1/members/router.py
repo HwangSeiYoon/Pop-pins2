@@ -6,10 +6,10 @@ Member Router
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 import redis
-import schemas
-import models
-from database import get_db, get_redis
-from auth import get_password_hash, verify_password, create_access_token, get_current_user
+from api.v1.schemas import schemas
+from db.models import models
+from db.database import get_db, get_redis
+from api.v1.auth.router import get_password_hash, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/v1/member", tags=["member"])
 

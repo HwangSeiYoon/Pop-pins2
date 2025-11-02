@@ -5,6 +5,7 @@ Course Router
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+from utils.auth_middleware import require_auth
 # from typing import List
 # from api.v1.schemas import CourseListItem, CourseCreate, CourseResponse, CourseDetailResponse, ChapterSimple  # 스키마 없음
 from db import models
@@ -15,7 +16,10 @@ router = APIRouter(prefix="/v1/course", tags=["course"])
 
 # 1. 강의 리스트 조회
 @router.get("/")
-def get_course_list(db: Session = Depends(get_db)):
+def get_course_list(
+    current_user: dict = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
     """등록된 모든 강의 목록을 조회합니다."""
     courses = db.query(models.Course).all()
     return {"courses": [course.__dict__ for course in courses]}
@@ -41,7 +45,11 @@ def get_course_list(db: Session = Depends(get_db)):
 
 # 3. 강의 상세 보기
 @router.get("/{course_id}")
-def get_course_detail(course_id: int, db: Session = Depends(get_db)):
+def get_course_detail(
+    course_id: int,
+    current_user: dict = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
     """특정 강의의 상세 정보를 조회합니다."""
     course = db.query(models.Course).filter(models.Course.id == course_id).first()
 

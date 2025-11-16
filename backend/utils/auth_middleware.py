@@ -31,7 +31,7 @@ def verify_token(token: str, redis_client: redis.Redis) -> Dict[str, Any]:
     try:
         # JWT 토큰 디코딩
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: str = payload.get("sub")
+        user_id: str = payload.get("sub") or payload.get("user_id")
         
         if user_id is None:
             raise HTTPException(
@@ -50,7 +50,8 @@ def verify_token(token: str, redis_client: redis.Redis) -> Dict[str, Any]:
             )
         
         # 토큰 일치 확인
-        if stored_token.decode() != token:
+        stored_token_str = stored_token if isinstance(stored_token, str) else stored_token.decode()
+        if stored_token_str != token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token",

@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Vector DB files
+vector_db/
+*.faiss
+*.pkl
+
+# Metadata
+*_metadata.json
+
+# PDF files (선택사항 - PDF 파일도 git에 포함하지 않으려면 주석 해제)
+# pdfs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+

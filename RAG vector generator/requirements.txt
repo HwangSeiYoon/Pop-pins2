@@ -1,0 +1,21 @@
+# 파이썬 교재 PDF RAG 벡터 생성기 Requirements
+
+# LangChain 관련
+langchain>=0.1.0
+langchain-community>=0.0.20
+
+# 임베딩 모델 (선택사항 - 사용하는 모델만 설치)
+langchain-aws>=0.1.0          # AWS Bedrock 임베딩용
+boto3>=1.34.0                 # AWS SDK (Bedrock 사용 시 필수)
+langchain-google-genai>=0.0.6  # Gemini 임베딩용
+langchain-openai>=0.0.5       # OpenAI 임베딩용
+
+# 벡터 데이터베이스
+faiss-cpu>=1.7.4  # CPU 버전 (GPU가 필요하면 faiss-gpu 설치)
+
+# PDF 처리
+pypdf>=3.17.0
+
+# 기타 유틸리티
+python-dotenv>=1.0.0  # 환경 변수 관리용 (.env 파일 지원)
+

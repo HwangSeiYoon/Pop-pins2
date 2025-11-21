@@ -46,7 +46,7 @@
       "typeVersion": 1,
       "credentials": {
         "googlePalmApi": {
-          "id": "fWNPL2x0jjU0zCJI",
+          "id": "mt37YSR770VK4kA2",
           "name": "Google Gemini(PaLM) Api account 2"
         }
       }
@@ -110,9 +110,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8000/api/v1/courses/",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth",
+        "url": "http://host.docker.internal:8000/v1/course",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -122,13 +120,13 @@
             },
             {
               "name": "Authorization",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InNldW5pQGV4YW1wbGUuY29tIiwiZXhwIjoxNzYzMjgzODc5fQ.JSz06CnaZPtfD4pYp_HluivJWb3jLsD2OqL-HRgQo0Y"
+              "value": "=Bearer {{ $('Webhook').first().json.body.userToken }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"title\": \"{{ $json.course.chapters[0].chapterTitle || 'Generated Course' }}\",\n  \"description\": \"{{ $json.course.chapters[0].chapterDescription || 'AI Generated Course' }}\",\n  \"difficulty\": \"medium\"\n}",
+        "jsonBody": "={\n  \"title\": \"{{ $('Webhook').first().json.body.courseTitle }}\",\n  \"description\": \"{{ $('Webhook').first().json.body.courseDescription }}\",\n  \"difficulty\": \"{{ $('Webhook').first().json.body.difficulty || 'medium' }}\",\n  \"chapters\": {{ JSON.stringify($json.course.chapters) }}\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -138,13 +136,7 @@
         32
       ],
       "id": "bb06656c-ae1a-4d4f-8414-5b08cc3973a6",
-      "name": "HTTP Request",
-      "credentials": {
-        "httpBearerAuth": {
-          "id": "jvPR1addCvwjS9QG",
-          "name": "Bearer Auth account"
-        }
-      }
+      "name": "HTTP Request"
     }
   ],
   "pinData": {},
@@ -212,7 +204,7 @@
     "availableInMCP": false,
     "errorWorkflow": "2Slj3TrOk43O6Kxd"
   },
-  "versionId": "1b5b7cde-e146-4fdf-89b3-40267c65b077",
+  "versionId": "db3d81f8-6a30-480a-a4c8-3c0f862b61e1",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "02749a32b39f5bfa4b075fa6ade2794559281b21a90a6123d64b36efdf1d3e02"

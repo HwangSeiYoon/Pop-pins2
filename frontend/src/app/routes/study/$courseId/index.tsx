@@ -4,6 +4,7 @@ import CoursePage from "@/pages/course";
 
 export const Route = createFileRoute("/study/$courseId/")({
   component: () => {
-    return <CoursePage />;
+    const { courseId } = Route.useParams();
+    return <CoursePage courseId={courseId} />;
   },
 });

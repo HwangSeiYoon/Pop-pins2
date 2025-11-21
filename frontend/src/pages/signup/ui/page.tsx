@@ -22,7 +22,6 @@ const SignupPage = () => {
     resolver: zodResolver(signupSchema),
     mode: "onBlur",
     defaultValues: {
-      name: "",
       email: "",
       password: "",
     },
@@ -30,12 +29,20 @@ const SignupPage = () => {
 
   const onSubmit = async (data: SignupFormData) => {
     try {
-      const { status } = await signup(data);
-      if (status === 200) {
+      console.log("📤 회원가입 요청 데이터:", data);
+      console.log("📤 API 기본 URL:", import.meta.env.VITE_API_BASE_URL);
+      
+      const response = await signup(data);
+      console.log("📥 회원가입 응답:", response);
+      
+      if (response.status === 200) {
+        console.log("✅ 회원가입 성공! 로그인 페이지로 이동");
         navigate({ to: ROUTE.login, replace: true });
+      } else {
+        console.log("❌ 회원가입 실패:", response.status);
       }
     } catch (error) {
-      console.debug(error);
+      console.error("🚨 회원가입 오류:", error);
     }
   };
 
@@ -52,14 +59,6 @@ const SignupPage = () => {
         </div>
 
         <Form className={styles.form()} onSubmit={handleSubmit(onSubmit)}>
-          <HookFormInput
-            isRequired
-            control={control}
-            label="이름"
-            name="name"
-            type="text"
-          />
-
           <HookFormInput
             isRequired
             control={control}

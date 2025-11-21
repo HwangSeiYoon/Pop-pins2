@@ -1,0 +1,16 @@
+Server initialized for asgi.
+INFO:     Will watch for changes in these directories: ['/Users/n99102/codyssey/new/Hack-DOCGODAI/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [54102] using WatchFiles
+Server initialized for asgi.
+INFO:     Started server process [54268]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+Starting FastAPI application...
+Database tables created successfully!
+Database initialized successfully!
+INFO:     127.0.0.1:50219 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50219 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50263 - "HEAD /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50709 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50709 - "GET /openapi.json HTTP/1.1" 200 OK

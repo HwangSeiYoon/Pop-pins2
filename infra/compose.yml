@@ -8,6 +8,16 @@ services:
   n8n:
     container_name: n8n
     image: ${N8N_IMAGE}
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 8.8.8.8
+      - 8.8.4.4
+    dns_search:
+      - googleapis.com
+    extra_hosts:
+      - "generativelanguage.googleapis.com:172.217.31.170"
+      - "host.docker.internal:host-gateway"
     environment:
       - N8N_SECURE_COOKIE=${N8N_SECURE_COOKIE}
       - N8N_AUTH_ENABLED=${N8N_AUTH_ENABLED}
@@ -15,6 +25,8 @@ services:
       - N8N_RUNNERS_ENABLED=${N8N_RUNNERS_ENABLED}
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=${N8N_BLOCK_ENV_ACCESS_IN_NODE}
       - N8N_GIT_NODE_DISABLE_BARE_REPOS=${N8N_GIT_NODE_DISABLE_BARE_REPOS}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_API_KEY}
     ports:
       - "${N8N_PORT}:5678"
     volumes:

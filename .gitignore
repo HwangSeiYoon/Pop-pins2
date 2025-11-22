@@ -80,10 +80,10 @@ ehthumbs.db
 Thumbs.db
 Desktop.ini
 
-# Vector DB (선택사항 - 이미 생성된 벡터 DB를 포함하려면 이 섹션을 제거하세요)
-# vector_db/*/index.faiss
-# vector_db/*/index.pkl
-# vector_db/*_metadata.json
+# Vector DB
+vector_db/*/index.faiss
+vector_db/*/index.pkl
+vector_db/*_metadata.json
 
 # Temporary files
 *.tmp

@@ -278,10 +278,13 @@ class PythonTextbookRAGGenerator:
         """
         # 경로 설정 - standalone으로 동작하도록 현재 스크립트 위치 기준으로 설정
         script_dir = Path(__file__).parent.resolve()
+        project_root = script_dir.parent  # Pop-pins2 폴더
 
         # 기본 경로 설정
         default_source_dir = script_dir / "pdfs"  # PDF 파일들을 넣을 디렉토리
-        default_output_dir = script_dir / "vector_db"  # 벡터 DB 저장 디렉토리
+        default_output_dir = (
+            project_root / "vector_db"
+        )  # 벡터 DB 저장 디렉토리 (Pop-pins2/vector_db)
 
         source_path = Path(source_dir) if source_dir else default_source_dir
         output_path = Path(output_dir) if output_dir else default_output_dir

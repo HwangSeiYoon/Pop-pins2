@@ -11,8 +11,9 @@
 1. [시작하기](#시작하기)
 2. [기본 사용법](#기본-사용법)
 3. [주요 기능](#주요-기능)
-4. [문제 해결](#문제-해결)
-5. [자주 묻는 질문](#자주-묻는-질문)
+4. [RAG 벡터 DB 생성하기](#rag-벡터-db-생성하기) (고급)
+5. [문제 해결](#문제-해결)
+6. [자주 묻는 질문](#자주-묻는-질문)
 
 ---
 
@@ -150,6 +151,83 @@
 - 한 번 생성된 챕터는 자동으로 저장됩니다
 - 같은 챕터를 다시 방문하면 즉시 표시됩니다 (재생성 없음)
 - 서버를 재시작하면 저장된 내용이 초기화됩니다
+
+---
+
+## 🔍 RAG 벡터 DB 생성하기
+
+> **참고**: 이 섹션은 고급 사용자를 위한 내용입니다. RAG 기능을 사용하지 않으면 이 단계를 건너뛰어도 됩니다.
+
+RAG(Retrieval-Augmented Generation) 기능을 사용하면 AI가 교재 PDF 내용을 참고하여 더 정확한 학습 자료를 생성할 수 있습니다.
+
+### RAG란?
+
+RAG는 AI가 생성하는 내용의 정확성을 높이기 위해 교재 PDF를 벡터 데이터베이스에 저장하고, 관련 내용을 자동으로 검색하여 참고하는 기술입니다.
+
+### 벡터 DB 생성 방법
+
+#### 1. 필요한 패키지 설치
+
+```bash
+cd "RAG vector generator"
+pip install -r requirements.txt langchain-google-genai
+```
+
+#### 2. 환경 변수 설정
+
+`RAG vector generator` 폴더에 `.env` 파일을 생성하고 Gemini API 키를 입력하세요:
+
+```env
+GEMINI_API_KEY=your-gemini-api-key-here
+```
+
+#### 3. PDF 파일 준비
+
+`RAG vector generator/pdfs` 폴더에 파이썬 교재 PDF 파일들을 넣어주세요.
+
+#### 4. 벡터 DB 생성
+
+```bash
+python python_textbook_rag_generator.py --db-name python_textbook_gemini_db --embedding-model gemini
+```
+
+이 명령을 실행하면:
+- `pdfs` 폴더의 모든 PDF 파일을 읽습니다
+- 각 PDF를 작은 텍스트 조각(청크)으로 나눕니다
+- 각 청크를 벡터로 변환하여 데이터베이스에 저장합니다
+- 생성된 벡터 DB는 `Pop-pins2/vector_db/` 폴더에 저장됩니다
+
+#### 5. 생성 완료 확인
+
+생성이 완료되면 다음 파일들이 생성됩니다:
+- `vector_db/python_textbook_gemini_db/index.faiss` - 벡터 인덱스 파일
+- `vector_db/python_textbook_gemini_db/index.pkl` - 메타데이터 파일
+- `vector_db/python_textbook_gemini_db_metadata.json` - 처리된 파일 목록
+
+### 벡터 DB 사용하기
+
+벡터 DB가 생성되면, `app/.env` 파일에서 다음 설정을 확인하세요:
+
+```env
+USE_RAG=true
+VECTOR_DB_PATH=../vector_db/python_textbook_gemini_db
+VECTOR_DB_EMBEDDING_MODEL=gemini
+```
+
+이제 백엔드를 실행하면 RAG 기능이 활성화되어, AI가 교재 내용을 참고하여 더 정확한 학습 자료를 생성합니다.
+
+### 자주 묻는 질문
+
+**Q: 벡터 DB 생성에 시간이 얼마나 걸리나요?**
+A: PDF 파일 수와 크기에 따라 다릅니다. 일반적으로 10개 정도의 PDF 파일은 10~30분 정도 소요됩니다.
+
+**Q: PDF 파일을 추가하고 싶어요.**
+A: `pdfs` 폴더에 새 PDF를 추가하고 벡터 DB 생성 명령을 다시 실행하면 됩니다. 이미 처리된 파일은 자동으로 건너뜁니다.
+
+**Q: 벡터 DB를 다시 생성해야 하나요?**
+A: PDF 파일을 추가하거나 수정한 경우에만 다시 생성하면 됩니다. 그 외에는 한 번 생성하면 계속 사용할 수 있습니다.
+
+자세한 내용은 [`RAG vector generator/README.md`](./RAG%20vector%20generator/README.md)를 참고하세요.
 
 ---
 

@@ -200,25 +200,26 @@ generator.generate_vector_db(
 ## 📁 기본 경로
 
 - **소스 디렉토리**: `./pdfs/` (스크립트와 같은 디렉토리의 pdfs 폴더)
-- **출력 디렉토리**: `./vector_db/` (스크립트와 같은 디렉토리의 vector_db 폴더)
+- **출력 디렉토리**: `../vector_db/` (프로젝트 루트의 vector_db 폴더, 즉 `Pop-pins2/vector_db/`)
 
 ## 📂 파일 구조
 
 ```
-RAG vector generator/
-├── python_textbook_rag_generator.py  # 메인 스크립트
-├── requirements.txt                   # 패키지 의존성
-├── README.md                          # 이 파일
-├── .env                               # 환경 변수 파일 (API 키 설정)
-├── pdfs/                              # PDF 파일들을 넣을 디렉토리
-│   ├── python_basics.pdf
-│   ├── python_advanced.pdf
-│   └── ...
-└── vector_db/                         # 벡터 DB 저장 디렉토리
-    ├── python_textbook_db/            # 벡터 DB 파일들
+Pop-pins2/
+├── RAG vector generator/
+│   ├── python_textbook_rag_generator.py  # 메인 스크립트
+│   ├── requirements.txt                   # 패키지 의존성
+│   ├── README.md                          # 이 파일
+│   ├── .env                               # 환경 변수 파일 (API 키 설정)
+│   └── pdfs/                              # PDF 파일들을 넣을 디렉토리
+│       ├── python_basics.pdf
+│       ├── python_advanced.pdf
+│       └── ...
+└── vector_db/                             # 벡터 DB 저장 디렉토리 (프로젝트 루트)
+    ├── python_textbook_gemini_db/         # 벡터 DB 파일들
     │   ├── index.faiss
     │   └── index.pkl
-    └── python_textbook_db_metadata.json  # 처리된 파일 메타데이터
+    └── python_textbook_gemini_db_metadata.json  # 처리된 파일 메타데이터
 ```
 
 ## 🔄 중복 처리 방지

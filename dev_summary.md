@@ -117,4 +117,30 @@
 - **Markdown**: react-markdown + remark-gfm 사용, 커스텀 컴포넌트로 코드 블록 처리
 
 ---
+
+## [v1.4.1] - 2025-11-22 RAG 벡터 생성기 개선
+
+### 변경 사항
+
+1. **RAG 벡터 생성기 경로 수정**
+   - 벡터 DB 저장 경로를 `RAG vector generator/vector_db` → `Pop-pins2/vector_db`로 변경
+   - 프로젝트 루트의 `vector_db` 폴더에 통합 저장
+   - `python_textbook_rag_generator.py`의 `default_output_dir` 수정
+
+2. **문서 업데이트**
+   - `README.md`에 RAG 벡터 DB 생성 방법 추가
+   - `manual.md`에 "RAG 벡터 DB 생성하기" 섹션 추가 (고급 사용자용)
+   - 벡터 DB 생성 단계별 가이드 제공
+
+3. **.gitignore 업데이트**
+   - `Pop-pins2/.gitignore`에 벡터 DB 파일 추가
+   - `vector_db/*/index.faiss`, `vector_db/*/index.pkl`, `vector_db/*_metadata.json` 무시
+
+### 기술적 세부사항
+
+- **벡터 DB 경로**: `script_dir.parent / "vector_db"` (Pop-pins2 폴더 기준)
+- **기본 DB 이름**: `python_textbook_gemini_db` (Gemini 임베딩 사용 시)
+- **메타데이터 관리**: 처리된 파일의 해시값과 메타데이터를 JSON으로 저장하여 중복 처리 방지
+
+---
 *이 문서는 개발 진행 상황을 한눈에 파악할 수 있도록 요약했습니다. 필요에 따라 세부 내용은 각 파일 및 커밋 로그를 참고하세요.*

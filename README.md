@@ -39,6 +39,25 @@ VECTOR_DB_PATH=../vector_db/python_textbook_gemini_db
 VECTOR_DB_EMBEDDING_MODEL=gemini
 ```
 
+### 1-1. RAG 벡터 DB 생성 (선택사항)
+
+RAG 기능을 사용하려면 먼저 벡터 DB를 생성해야 합니다:
+
+```bash
+cd "RAG vector generator"
+pip install -r requirements.txt langchain-google-genai
+
+# .env 파일 생성 (RAG vector generator 폴더에)
+# GEMINI_API_KEY=your-gemini-api-key-here
+
+# 벡터 DB 생성 (Gemini 임베딩 사용)
+python python_textbook_rag_generator.py --db-name python_textbook_gemini_db --embedding-model gemini
+```
+
+생성된 벡터 DB는 `Pop-pins2/vector_db/` 폴더에 저장됩니다.
+
+자세한 사용법은 [`RAG vector generator/README.md`](./RAG%20vector%20generator/README.md)를 참고하세요.
+
 ### 2. Backend 실행
 
 ```bash
@@ -69,7 +88,7 @@ npm run dev
 ## 📁 프로젝트 구조
 
 ```
-pop_pins_ii/
+Pop-pins2/
 ├── app/                    # Backend (FastAPI)
 │   ├── main_with_RAG.py   # RAG 통합 버전 (권장)
 │   ├── main.py            # 기본 버전
@@ -81,7 +100,11 @@ pop_pins_ii/
 │   │   ├── components/    # 재사용 컴포넌트
 │   │   └── services/       # API 서비스
 │   └── package.json
-├── vector_db/             # RAG 벡터 DB
+├── RAG vector generator/  # RAG 벡터 DB 생성 도구
+│   ├── python_textbook_rag_generator.py
+│   ├── pdfs/              # PDF 파일 저장소
+│   └── README.md
+├── vector_db/             # RAG 벡터 DB (생성된 파일 저장)
 │   └── python_textbook_gemini_db/
 ├── manual.md              # 사용설명서 (비전공자용)
 ├── dev_summary.md         # 개발 요약

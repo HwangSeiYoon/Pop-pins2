@@ -81,9 +81,7 @@ Thumbs.db
 Desktop.ini
 
 # Vector DB
-vector_db/*/index.faiss
-vector_db/*/index.pkl
-vector_db/*_metadata.json
+# 벡터 DB 파일들은 Git에 포함됩니다 (100MB 미만이므로)
 
 # Temporary files
 *.tmp

@@ -118,7 +118,7 @@
 
 ---
 
-## [v1.4.1] - 2025-11-22 RAG 벡터 생성기 개선
+## [v1.4.1] - 2025-11-22 RAG 벡터 생성기 개선 및 프로젝트 정리
 
 ### 변경 사항
 
@@ -132,15 +132,42 @@
    - `manual.md`에 "RAG 벡터 DB 생성하기" 섹션 추가 (고급 사용자용)
    - 벡터 DB 생성 단계별 가이드 제공
 
-3. **.gitignore 업데이트**
-   - `Pop-pins2/.gitignore`에 벡터 DB 파일 추가
-   - `vector_db/*/index.faiss`, `vector_db/*/index.pkl`, `vector_db/*_metadata.json` 무시
+3. **벡터 DB 정리 및 Git 포함**
+   - 사용하지 않는 `python_textbook_db` 제거 (gemini 버전만 유지)
+   - 벡터 DB 파일 크기가 100MB 미만이므로 Git에 포함
+   - `.gitignore`에서 벡터 DB 무시 규칙 제거
 
 ### 기술적 세부사항
 
 - **벡터 DB 경로**: `script_dir.parent / "vector_db"` (Pop-pins2 폴더 기준)
 - **기본 DB 이름**: `python_textbook_gemini_db` (Gemini 임베딩 사용 시)
 - **메타데이터 관리**: 처리된 파일의 해시값과 메타데이터를 JSON으로 저장하여 중복 처리 방지
+
+---
+
+## [v1.4.2] - 2025-11-22 프로젝트 정리 및 벡터 DB Git 포함
+
+### 변경 사항
+
+1. **불필요한 파일 제거**
+   - 사용하지 않는 `python_textbook_db` 벡터 DB 제거 (gemini 버전만 유지)
+   - `app/main_with_RAG_openai.py` 제거 (현재 Gemini 사용 중)
+   - `app/some.zip` 임시 파일 제거
+   - `UNUSED_FILES.md` 정리 문서 제거
+
+2. **벡터 DB Git 포함**
+   - 벡터 DB 파일 크기가 100MB 미만이므로 Git 저장소에 포함
+   - `.gitignore`에서 벡터 DB 무시 규칙 제거
+   - `vector_db/python_textbook_gemini_db/` 폴더 전체를 Git에 포함
+
+3. **문서 업데이트**
+   - `README.md` 프로젝트 구조에서 `main.py` 제거 (사용하지 않음)
+   - `dev_summary.md`에 정리 작업 기록
+
+### 기술적 세부사항
+
+- **벡터 DB 관리**: Git에 포함하여 클론 시 즉시 사용 가능
+- **프로젝트 구조 단순화**: 사용하지 않는 파일 제거로 프로젝트 구조 명확화
 
 ---
 *이 문서는 개발 진행 상황을 한눈에 파악할 수 있도록 요약했습니다. 필요에 따라 세부 내용은 각 파일 및 커밋 로그를 참고하세요.*

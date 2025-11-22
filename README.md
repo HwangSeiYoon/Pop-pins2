@@ -91,7 +91,6 @@ npm run dev
 Pop-pins2/
 ├── app/                    # Backend (FastAPI)
 │   ├── main_with_RAG.py   # RAG 통합 버전 (권장)
-│   ├── main.py            # 기본 버전
 │   ├── requirements.txt
 │   └── README.md
 ├── frontend/              # Frontend (React)

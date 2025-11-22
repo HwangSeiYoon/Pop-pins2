@@ -1,0 +1,26 @@
+# Frontend dependencies
+
+# Node.js runtime (>= 18)
+# Package manager
+npm
+
+# Core libraries
+react@19
+react-dom@19
+react-router-dom@6
+axios@1
+typescript@5
+vite@5
+
+# UI & styling
+tailwindcss@4
+postcss@8
+autoprefixer@10
+
+# Markdown rendering
+react-markdown@9
+remark-gfm@4
+
+# Development tools
+eslint@8
+prettier@3

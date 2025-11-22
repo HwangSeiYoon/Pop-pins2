@@ -1,0 +1,134 @@
+# PopPins II
+
+**AI 기반 PBL 학습 자료 자동 생성 웹 애플리케이션**
+
+PopPins II는 Google Gemini AI를 활용하여 맞춤형 학습 자료를 자동으로 생성하는 웹 플랫폼입니다. 학습 주제를 입력하면 AI가 커리큘럼, 개념 정리, 실습 과제, 퀴즈를 생성하고, RAG 기술을 통해 교재 내용을 참고하여 신뢰성 높은 학습 자료를 제공합니다.
+
+## ✨ 주요 기능
+
+- 🚀 **Lazy-Loading 커리큘럼**: 초기 로드 시 커리큘럼만 빠르게 생성
+- 📚 **3가지 학습 콘텐츠**: 개념 학습, 실습 과제, 퀴즈를 각 챕터별로 제공
+- 🤖 **AI 기반 채점**: 퀴즈 답안을 AI로 자동 채점하고 상세 피드백 제공
+- 💾 **스마트 캐싱**: 한 번 생성된 챕터는 재방문 시 즉시 로드
+- 📥 **다운로드 기능**: 생성된 챕터를 Markdown 파일로 다운로드
+- 🔍 **RAG 통합**: 교재 PDF를 벡터 DB에 저장하여 참고 자료 자동 검색
+
+## 🛠️ 기술 스택
+
+- **Backend**: FastAPI + Gemini (Google Generative AI) + RAG (FAISS 벡터 DB)
+- **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
+- **AI 모델**: Gemini 2.5 Flash / Gemini 2.0 Flash Exp
+- **벡터 DB**: FAISS (LangChain 통합)
+
+## 🚀 Quick Start
+
+### 사전 요구사항
+
+- Python 3.8+
+- Node.js 18+
+- Gemini API 키 ([Google AI Studio](https://makersuite.google.com/app/apikey)에서 발급)
+
+### 1. 환경 변수 설정
+
+`app/.env` 파일을 생성하고 다음 내용을 추가하세요:
+
+```env
+GEMINI_API_KEY=your-gemini-api-key-here
+USE_RAG=true
+VECTOR_DB_PATH=../vector_db/python_textbook_gemini_db
+VECTOR_DB_EMBEDDING_MODEL=gemini
+```
+
+### 2. Backend 실행
+
+```bash
+cd app
+pip install -r requirements.txt
+uvicorn main_with_RAG:app --port 8001 --reload
+```
+
+서버가 실행되면 `http://localhost:8001/docs`에서 API 문서를 확인할 수 있습니다.
+
+### 3. Frontend 실행
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+브라우저에서 `http://localhost:5173`을 열면 애플리케이션을 사용할 수 있습니다.
+
+### 4. 사용하기
+
+1. 학습 주제, 난이도, 챕터 수를 입력
+2. "학습 자료 생성하기" 버튼 클릭
+3. 생성된 커리큘럼에서 원하는 챕터 클릭
+4. 개념 학습 → 실습 과제 → 퀴즈 순서로 학습
+
+## 📁 프로젝트 구조
+
+```
+pop_pins_ii/
+├── app/                    # Backend (FastAPI)
+│   ├── main_with_RAG.py   # RAG 통합 버전 (권장)
+│   ├── main.py            # 기본 버전
+│   ├── requirements.txt
+│   └── README.md
+├── frontend/              # Frontend (React)
+│   ├── src/
+│   │   ├── pages/         # 페이지 컴포넌트
+│   │   ├── components/    # 재사용 컴포넌트
+│   │   └── services/       # API 서비스
+│   └── package.json
+├── vector_db/             # RAG 벡터 DB
+│   └── python_textbook_gemini_db/
+├── manual.md              # 사용설명서 (비전공자용)
+├── dev_summary.md         # 개발 요약
+└── README.md              # 이 파일
+```
+
+## 📚 문서
+
+- 📖 **사용설명서**: [`manual.md`](./manual.md) - 비전공자도 이해할 수 있는 상세 가이드
+- 📝 **개발 요약**: [`dev_summary.md`](./dev_summary.md) - 개발 진행 상황 및 변경 이력
+- 🔄 **변경 이력**: [`app/CHANGELOG.md`](./app/CHANGELOG.md) - 버전별 변경 사항
+- 🔌 **API 문서**: [`app/API_REFERENCE.md`](./app/API_REFERENCE.md) - API 엔드포인트 상세
+- 🔍 **RAG 가이드**: [`app/RAG_INTEGRATION_GUIDE.md`](./app/RAG_INTEGRATION_GUIDE.md) - RAG 설정 및 사용법
+
+## 🎯 주요 API 엔드포인트
+
+- `POST /generate-course` - 커리큘럼만 생성 (Lazy-Loading)
+- `POST /generate-chapter-content` - 챕터 상세 내용 생성
+- `POST /download-chapter` - 챕터를 Markdown으로 다운로드
+- `POST /grade-quiz` - 퀴즈 답안 채점
+- `GET /health` - 서버 상태 확인
+
+자세한 내용은 API 문서를 참고하세요.
+
+## 🔧 문제 해결
+
+### 서버 연결 오류
+- 백엔드 서버가 실행 중인지 확인 (`http://localhost:8001/health`)
+- 포트가 8001인지 확인
+
+### API 키 오류
+- `.env` 파일에 올바른 `GEMINI_API_KEY`가 설정되어 있는지 확인
+
+### RAG 관련 오류
+- 벡터 DB 경로가 올바른지 확인
+- `USE_RAG=false`로 설정하여 RAG 없이 사용 가능
+
+자세한 문제 해결 방법은 [`manual.md`](./manual.md)의 "문제 해결" 섹션을 참고하세요.
+
+## 📝 라이선스
+
+이 프로젝트는 교육 목적으로 자유롭게 사용할 수 있습니다.
+
+## 🤝 기여
+
+버그 리포트나 기능 제안은 이슈로 등록해주세요.
+
+---
+
+**버전**: v1.4.0 | **최종 업데이트**: 2025-11-22

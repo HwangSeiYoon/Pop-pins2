@@ -2,8 +2,9 @@
 
 **프로젝트**: PopPins II (어딧세이 가제)  
 **문서 타입**: Architecture Diagram & System Design  
-**버전**: 1.0  
+**버전**: 1.4.2  
 **작성일**: 2025-11-22  
+**최종 업데이트**: 2025-11-22  
 **작성자**: 이진걸
 
 ---
@@ -57,30 +58,38 @@ graph TB
 
 ## 🔧 Component Architecture
 
-### 1. Frontend Layer (🔄 예정)
+### 1. Frontend Layer (✅ 완료)
 
 **기술 스택**:
-- React 18+
+- React 19 + TypeScript
 - Vite (빌드 도구)
-- TailwindCSS (선택)
+- TailwindCSS (스타일링)
 - Axios (HTTP 클라이언트)
+- React Router (라우팅)
+- React Markdown (마크다운 렌더링)
 
 **주요 컴포넌트**:
 ```
 src/
+├── pages/
+│   ├── HomePage.tsx           # 주제 입력 폼
+│   ├── ResultPage.tsx         # 커리큘럼 표시
+│   └── ChapterPage.tsx        # 챕터 상세 (개념, 실습, 퀴즈)
 ├── components/
-│   ├── TopicForm.jsx          # 주제 입력 폼
-│   ├── LoadingSpinner.jsx     # 로딩 표시
-│   ├── CourseViewer.jsx       # 커리큘럼 표시
-│   ├── ConceptViewer.jsx      # 개념 정리 표시
-│   ├── ExerciseViewer.jsx     # 실습 과제 표시
-│   └── QuizViewer.jsx         # 퀴즈 표시
+│   └── MarkdownViewer.tsx     # 마크다운 렌더링 (코드 블록 커스텀)
 ├── services/
-│   └── api.js                 # API 호출 함수
-└── App.jsx                    # 메인 앱
+│   └── api.ts                 # API 호출 함수
+└── App.tsx                    # 메인 앱
 ```
 
-**상태**: 🔄 개발 예정
+**주요 기능**:
+- ✅ Lazy-Loading 커리큘럼 (빠른 초기 로드)
+- ✅ 챕터별 상세 콘텐츠 로드
+- ✅ 퀴즈 AI 채점 기능
+- ✅ 챕터 다운로드 (Markdown)
+- ✅ 반응형 UI/UX
+
+**상태**: ✅ 완료
 
 ---
 
@@ -106,7 +115,11 @@ app/
 
 | Method | Endpoint | 설명 | 상태 |
 |--------|----------|------|------|
-| POST | `/generate-study-material` | 학습 자료 생성 | ✅ |
+| POST | `/generate-course` | 커리큘럼만 생성 (Lazy-Loading) | ✅ |
+| POST | `/generate-chapter-content` | 챕터 상세 내용 생성 | ✅ |
+| POST | `/generate-study-material` | 학습 자료 일괄 생성 (하위 호환) | ✅ |
+| POST | `/download-chapter` | 챕터 Markdown 다운로드 | ✅ |
+| POST | `/grade-quiz` | 퀴즈 AI 채점 | ✅ |
 | GET | `/` | API 정보 | ✅ |
 | GET | `/health` | 서버 상태 확인 | ✅ |
 
@@ -127,7 +140,7 @@ app/
 **설정**:
 ```python
 model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash-exp",
+    model_name="gemini-2.5-flash",
     generation_config={
         "temperature": 0.7,
         "max_output_tokens": 8192,
@@ -345,13 +358,13 @@ graph LR
 
 | Layer | Technology | Version | Status |
 |-------|-----------|---------|--------|
-| Frontend | React + Vite | 18+ | 🔄 예정 |
+| Frontend | React + TypeScript + Vite | 19 | ✅ 완료 |
 | Backend | FastAPI | 0.104+ | ✅ 완료 |
 | AI | Google Gemini | 2.5 Flash | ✅ 완료 |
 | Embedding | text-embedding-004 | - | ✅ 완료 |
-| Vector DB | FAISS | CPU | ✅ 완료 |
-| Database | PostgreSQL | 14+ | ⏳ 계획 |
-| Deployment | GCP Cloud Run | - | ⏳ 계획 |
+| Vector DB | FAISS (Gemini) | python_textbook_gemini_db | ✅ 완료 |
+| Database | In-Memory Cache | - | ✅ 완료 |
+| Deployment | Local Development | - | ✅ 완료 |
 
 ---
 
@@ -365,7 +378,7 @@ graph LR
 
 ---
 
-**문서 버전**: 1.0  
+**문서 버전**: 1.4.2  
 **최종 수정일**: 2025-11-22  
 **상태**: 현재 아키텍처 문서화 완료  
 **다음 단계**: Frontend 개발, DB 통합

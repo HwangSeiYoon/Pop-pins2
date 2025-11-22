@@ -2,7 +2,7 @@
 
 **프로젝트**: PopPins II (어딧세이 가제)  
 **문서 타입**: Product Requirement Document  
-**버전**: 2.0 (통합본)  
+**버전**: 1.4.2  
 **작성일**: 2025-11-22  
 **작성자**: 이진걸  
 **최종 업데이트**: 2025-11-22
@@ -46,7 +46,10 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 2. **챕터 생성** (Chapter Generation) - ✅ 완료
 3. **개념 생성** (Concept Generation) - ✅ 완료
 4. **문제 생성** (Problem Generation) - ✅ 완료
-5. **회원가입** (User Registration) - ⏳ 계획
+5. **퀴즈 생성 및 채점** (Quiz Generation & Grading) - ✅ 완료
+6. **챕터 다운로드** (Chapter Download) - ✅ 완료
+7. **캐싱 시스템** (In-Memory Caching) - ✅ 완료
+8. **회원가입** (User Registration) - ⏳ 계획
 
 ### 멘토링 피드백 반영 (2025-11-17 ~ 11-19)
 
@@ -64,18 +67,18 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 
 | 구성 요소 | 선택 기술 | 상태 |
 |----------|----------|------|
-| Frontend | React.js + Vite | 🔄 예정 |
+| Frontend | React 19 + TypeScript + Vite | ✅ 완료 |
 | Backend | FastAPI | ✅ 완료 |
-| Database | PostgreSQL | ⏳ 계획 |
+| Database | In-Memory Cache | ✅ 완료 |
 | AI | Google Gemini 2.5 Flash | ✅ 완료 |
-| Vector DB | FAISS | ✅ 완료 |
+| Vector DB | FAISS (python_textbook_gemini_db) | ✅ 완료 |
 | Embedding | text-embedding-004 | ✅ 완료 |
 
 ### RAG 구현 결정 (2025-11-18 회의)
 
 **핵심 사항**:
 - 파이썬 전문 PDF 자료 수집 및 벡터화
-- FAISS 벡터 DB 로컬 저장 (`python_textbook_gemini_db`)
+- FAISS 벡터 DB 로컬 저장 (`python_textbook_gemini_db`) - Git에 포함
 - Top-K=3 Similarity Search
 - Gemini text-embedding-004 모델 사용
 
@@ -675,7 +678,7 @@ curl -X POST "http://localhost:8001/generate-study-material" \
 
 ---
 
-**문서 버전**: 2.0 (통합본)  
+**문서 버전**: 1.4.2  
 **최종 수정일**: 2025-11-22  
 **승인자**: 이진걸  
 **상태**: Backend MVP 완료, Frontend 개발 진행 중  

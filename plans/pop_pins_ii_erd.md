@@ -2,8 +2,9 @@
 
 **프로젝트**: PopPins II (어딧세이 가제)  
 **문서 타입**: Database Schema & ERD  
-**버전**: 1.0  
+**버전**: 1.4.2  
 **작성일**: 2025-11-22  
+**최종 업데이트**: 2025-11-22  
 **작성자**: 이진걸
 
 ---
@@ -519,7 +520,7 @@ CREATE INDEX idx_chapter_studying ON chapter(is_studying) WHERE deleted_at IS NU
 
 ---
 
-**문서 버전**: 1.0  
+**문서 버전**: 1.4.2  
 **최종 수정일**: 2025-11-22  
 **기반 파일**: `extra_references/POP.PINS.sql`  
 **상태**: 설계 완료, 구현 대기  

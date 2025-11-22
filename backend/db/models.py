@@ -64,18 +64,20 @@ class Course(Base):
 
     # Relationships
     owner = relationship("Member", back_populates="courses")
+    chapters = relationship("Chapter", back_populates="course", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Course(id={self.id}, title={self.title}, difficulty={self.difficulty})>"
 
 
 class Chapter(Base):
-    """챕터 모델 (단일 모드: 질문 1개 = 챕터 1개)"""
+    """챕터 모델 (단일 모드: 질문 1개 = 챕터 1개, 코스 모드: 코스의 챕터들)"""
     __tablename__ = "chapter"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    course_id = Column(Integer, ForeignKey("course.id"), nullable=True)  # 코스 모드일 때 사용
     owner_id = Column(Integer, ForeignKey("member.id"), nullable=False)
-    title = Column(String(255), nullable=False)  # 학생이 입력한 질문
+    title = Column(String(255), nullable=False)  # 학생이 입력한 질문 또는 AI가 생성한 챕터 제목
     description = Column(Text, nullable=True)  # AI가 생성한 요약/설명
     status = Column(Enum(StatusEnum), default=StatusEnum.pending)  # AI 생성 상태
     is_active = Column(Boolean, default=True)
@@ -83,6 +85,7 @@ class Chapter(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
+    course = relationship("Course", back_populates="chapters")
     owner = relationship("Member", back_populates="chapters")
     concept = relationship("Concept", back_populates="chapter", cascade="all, delete-orphan", uselist=False)  # 1:1
     exercise = relationship("Exercise", back_populates="chapter", cascade="all, delete-orphan", uselist=False)  # 1:1

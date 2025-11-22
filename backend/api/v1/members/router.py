@@ -26,12 +26,6 @@ def signup(member: MemberSignup, db: Session = Depends(get_db)):
     existing_member = db.query(models.Member).filter(models.Member.email == member.email).first()
     if existing_member:
         raise HTTPException(status_code=400, detail="Email already registered")
-        return SignupResponse(
-            state="failed",
-            id=new_member.id,
-            email=new_member.email,
-            created_at=new_member.created_at
-        )
 
     # 비밀번호 해싱
     hashed_password = get_password_hash(member.password)
@@ -46,8 +40,7 @@ def signup(member: MemberSignup, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_member)
 
-    return SignupResponse(
-        state="success",
+    return MemberResponse(
         id=new_member.id,
         email=new_member.email,
         created_at=new_member.created_at
@@ -77,7 +70,6 @@ def login(
     # 비밀번호 확인
     if not verify_password(credentials.password, member.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-        return LoginResponse(state="failed")
 
     # JWT 토큰 생성
     access_token = create_access_token(data={"user_id": member.id, "email": member.email})

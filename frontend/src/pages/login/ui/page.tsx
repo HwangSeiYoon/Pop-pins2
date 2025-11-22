@@ -9,6 +9,7 @@ import { tokenAtom } from "@/shared/store";
 import { formStyle } from "@/shared/styles";
 import { HookFormInput, Section } from "@/shared/ui";
 
+import { login } from "../api";
 import { loginSchema } from "../model/schema";
 import type { LoginFormData } from "../model/types";
 
@@ -29,23 +30,29 @@ const LoginPage = () => {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    // try {
-    //   const {
-    //     status,
-    //     data: { token },
-    //   } = await login(data);
-
-    //   if (status === 200 && token) {
-    //     setToken(token);
-    //     navigate({ to: ROUTE.dashboard, replace: true });
-    //   }
-    // } catch (error) {
-    //   console.debug(error);
-    // }
-
-    const { email, password } = data;
-    if (email === "ersatzvitamin@gmail.com" && password === "123123123") {
-      navigate({ to: ROUTE.dashboard, replace: true });
+    try {
+      console.log("🔐 로그인 시도 데이터:", data);
+      console.log("🔐 API 기본 URL:", import.meta.env.VITE_API_BASE_URL);
+      
+      const response = await login(data);
+      console.log("🔐 로그인 응답:", response);
+      
+      if (response.status === 200 && response.data) {
+        console.log("✅ 로그인 성공!");
+        
+        // 백엔드 응답 구조에 따라 토큰 추출
+        const token = response.data.access_token;
+        if (token) {
+          setToken(token);
+          navigate({ to: ROUTE.dashboard, replace: true });
+        } else {
+          console.error("❌ 토큰이 응답에 없습니다:", response.data);
+        }
+      } else {
+        console.log("❌ 로그인 실패:", response.status);
+      }
+    } catch (error) {
+      console.error("🚨 로그인 오류:", error);
     }
   };
 

@@ -11,6 +11,7 @@ import hashlib
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import logging
+import time
 
 # .env 파일 로드
 try:
@@ -19,8 +20,12 @@ try:
     # 스크립트 디렉토리의 .env 파일 로드
     script_dir = Path(__file__).parent.resolve()
     env_path = script_dir / ".env"
+    app_env_path = script_dir.parent / "app" / ".env"
+
     if env_path.exists():
         load_dotenv(env_path)
+    elif app_env_path.exists():
+        load_dotenv(app_env_path)
     else:
         # .env 파일이 없어도 환경 변수는 계속 사용 가능
         load_dotenv()  # 현재 디렉토리와 상위 디렉토리에서 .env 찾기
@@ -83,6 +88,8 @@ class PythonTextbookRAGGenerator:
         api_key: Optional[str] = None,
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
+        rpm_limit: int = 1000,
+        batch_size: int = 100,
     ):
         """
         Args:
@@ -90,10 +97,14 @@ class PythonTextbookRAGGenerator:
             api_key: API 키 (None이면 환경 변수에서 가져옴)
             chunk_size: 텍스트 청크 크기
             chunk_overlap: 청크 간 겹치는 문자 수
+            rpm_limit: 분당 최대 요청 수 (Gemini 무료 티어 고려)
+            batch_size: 한 번에 처리할 청크 수
         """
         self.embedding_model_type = embedding_model.lower()
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.rpm_limit = rpm_limit
+        self.batch_size = batch_size
 
         # 임베딩 모델 초기화
         self.embeddings = self._initialize_embeddings(api_key)
@@ -168,7 +179,7 @@ class PythonTextbookRAGGenerator:
                 )
 
             return GoogleGenerativeAIEmbeddings(
-                model="models/embedding-001", google_api_key=api_key
+                model="models/text-embedding-004", google_api_key=api_key
             )
 
         elif self.embedding_model_type == "openai":
@@ -240,6 +251,86 @@ class PythonTextbookRAGGenerator:
         logger.info(f"발견된 PDF 파일 수: {len(pdf_files)}")
         return pdf_files
 
+    def _is_valid_page(self, page_content: str) -> bool:
+        """
+        페이지 내용이 유효한 본문인지 확인 (목차, 색인, 저작권 페이지 등 제외)
+        """
+        # 검사할 텍스트 길이 (앞부분만 확인)
+        header_text = page_content[:500].lower()
+        
+        # 제외할 키워드 목록
+        exclude_keywords = [
+            "table of contents",
+            "contents",
+            "목차",
+            "차례",
+            "index",
+            "색인",
+            "copyright",
+            "all rights reserved",
+            "preface",
+            "foreword",
+            "머리말",
+            "서문",
+            "acknowledgments",
+            "감사의 글"
+        ]
+        
+        # 키워드가 헤더에 포함되어 있는지 확인
+        for keyword in exclude_keywords:
+            if keyword in header_text:
+                # 줄 단위로 분리하여 제목 줄에 키워드가 있는지 확인
+                lines = header_text.split('\n')
+                for line in lines[:5]:  # 상위 5줄만 검사
+                    if keyword in line.strip():
+                        logger.info(f"  🚫 제외된 페이지 (키워드 감지: {keyword})")
+                        return False
+                        
+        # 내용이 너무 짧은 페이지 제외
+        if len(page_content.strip()) < 50:
+            logger.info(f"  🚫 제외된 페이지 (내용 부족: {len(page_content.strip())}자)")
+            return False
+            
+        return True
+
+    def _clean_page_content(self, text: str) -> str:
+        """
+        페이지 텍스트 정제 (헤더/푸터 제거, 공백 정리)
+        """
+        lines = text.split('\n')
+        if not lines:
+            return ""
+
+        # 1. 헤더/푸터 제거
+        start_idx = 0
+        end_idx = len(lines)
+        
+        # 앞부분 검사
+        for i in range(min(3, len(lines))):
+            line = lines[i].strip()
+            if len(line) < 20 and any(c.isdigit() for c in line):
+                start_idx = i + 1
+            else:
+                break
+                
+        # 뒷부분 검사
+        for i in range(len(lines) - 1, max(len(lines) - 4, start_idx), -1):
+            line = lines[i].strip()
+            if len(line) < 20 and any(c.isdigit() for c in line):
+                end_idx = i
+            else:
+                break
+
+        cleaned_lines = lines[start_idx:end_idx]
+        text = '\n'.join(cleaned_lines)
+
+        # 2. 과도한 공백 정리
+        import re
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        text = re.sub(r'[ \t]+', ' ', text)
+        
+        return text.strip()
+
     def _process_pdf(self, pdf_path: Path) -> List[Any]:
         """단일 PDF 파일 처리"""
         try:
@@ -247,14 +338,28 @@ class PythonTextbookRAGGenerator:
             loader = PyPDFLoader(str(pdf_path))
             documents = loader.load()
 
-            # 메타데이터에 파일 경로 추가
+            # 메타데이터에 파일 경로 추가 및 필터링
+            filtered_documents = []
+            skipped_count = 0
+            
             for doc in documents:
-                doc.metadata["source_file"] = str(pdf_path)
-                doc.metadata["file_name"] = pdf_path.name
+                # 페이지 필터링 적용
+                if self._is_valid_page(doc.page_content):
+                    # 텍스트 정제 (헤더/푸터 제거)
+                    doc.page_content = self._clean_page_content(doc.page_content)
+                    
+                    doc.metadata["source_file"] = str(pdf_path)
+                    doc.metadata["file_name"] = pdf_path.name
+                    filtered_documents.append(doc)
+                else:
+                    skipped_count += 1
+
+            if skipped_count > 0:
+                logger.info(f"  → {skipped_count}개 페이지가 필터링되었습니다.")
 
             # 문서 분할
-            texts = self.text_splitter.split_documents(documents)
-            logger.info(f"  → {len(documents)} 페이지에서 {len(texts)} 개 청크 생성")
+            texts = self.text_splitter.split_documents(filtered_documents)
+            logger.info(f"  → {len(filtered_documents)} 페이지(유효)에서 {len(texts)} 개 청크 생성")
 
             return texts
 
@@ -278,13 +383,10 @@ class PythonTextbookRAGGenerator:
         """
         # 경로 설정 - standalone으로 동작하도록 현재 스크립트 위치 기준으로 설정
         script_dir = Path(__file__).parent.resolve()
-        project_root = script_dir.parent  # Pop-pins2 폴더
 
         # 기본 경로 설정
         default_source_dir = script_dir / "pdfs"  # PDF 파일들을 넣을 디렉토리
-        default_output_dir = (
-            project_root / "vector_db"
-        )  # 벡터 DB 저장 디렉토리 (Pop-pins2/vector_db)
+        default_output_dir = script_dir / "vector_db"  # 벡터 DB 저장 디렉토리
 
         source_path = Path(source_dir) if source_dir else default_source_dir
         output_path = Path(output_dir) if output_dir else default_output_dir
@@ -392,9 +494,35 @@ class PythonTextbookRAGGenerator:
                 continue
 
         # 벡터 DB에 추가
+        # 벡터 DB에 추가 (Rate Limiting 적용)
         if all_new_texts:
-            logger.info(f"벡터 DB에 {len(all_new_texts)} 개 청크 추가 중...")
-            vector_store.add_documents(all_new_texts)
+            total_chunks = len(all_new_texts)
+            logger.info(f"벡터 DB에 {total_chunks} 개 청크 추가 시작 (RPM 제한: {self.rpm_limit})")
+            
+            # 배치 사이즈 설정 (한 번에 처리할 청크 수)
+            # 너무 크면 타임아웃 가능성, 너무 작으면 효율 저하
+            batch_size = self.batch_size
+            
+            # RPM에 따른 대기 시간 계산
+            # 예: 1000 RPM -> 1분(60초)에 1000개 -> 1개당 0.06초
+            # 배치(100개) 처리 후 대기 시간 = 100 * (60 / RPM)
+            sleep_time_per_batch = batch_size * (60.0 / self.rpm_limit)
+            
+            # 최소 대기 시간 보장 (API 호출 시간 고려하여 약간 여유를 둠)
+            sleep_time_per_batch = max(sleep_time_per_batch, 0.5)
+
+            for i in range(0, total_chunks, batch_size):
+                batch = all_new_texts[i : i + batch_size]
+                vector_store.add_documents(batch)
+                
+                progress = min(i + batch_size, total_chunks)
+                logger.info(f"  진행률: {progress}/{total_chunks} ({progress/total_chunks*100:.1f}%)")
+                
+                # 마지막 배치가 아니면 대기
+                if progress < total_chunks:
+                    logger.info(f"  Rate Limit 준수를 위해 {sleep_time_per_batch:.2f}초 대기...")
+                    time.sleep(sleep_time_per_batch)
+
             logger.info("벡터 DB 업데이트 완료")
 
         # 벡터 DB 저장
@@ -458,6 +586,18 @@ def main():
         default=200,
         help="청크 간 겹치는 문자 수 (기본값: 200)",
     )
+    parser.add_argument(
+        "--rpm-limit",
+        type=int,
+        default=1000,
+        help="분당 최대 요청 수 (기본값: 1000)",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=100,
+        help="한 번에 처리할 청크 수 (기본값: 100)",
+    )
 
     args = parser.parse_args()
 
@@ -468,6 +608,8 @@ def main():
             api_key=args.api_key,
             chunk_size=args.chunk_size,
             chunk_overlap=args.chunk_overlap,
+            rpm_limit=args.rpm_limit,
+            batch_size=args.batch_size,
         )
 
         # 벡터 DB 생성

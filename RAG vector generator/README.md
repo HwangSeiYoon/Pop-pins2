@@ -166,15 +166,23 @@ python python_textbook_rag_generator.py --api-key "your-api-key"
 python python_textbook_rag_generator.py --chunk-size 1500 --chunk-overlap 300
 ```
 
+#### Rate Limiting 설정 (API 할당량 관리)
+```bash
+# 분당 1000개 요청, 100개씩 배치 처리
+python python_textbook_rag_generator.py --rpm-limit 1000 --batch-size 100
+```
+
 #### 모든 옵션 함께 사용
 ```bash
 python python_textbook_rag_generator.py \
-    --db-name "python_textbook_db" \
+    --db-name "python_textbook_gemini_db" \
     --source-dir "./pdfs" \
-    --output-dir "./vector_db" \
+    --output-dir "../vector_db" \
     --embedding-model gemini \
     --chunk-size 1000 \
-    --chunk-overlap 200
+    --chunk-overlap 200 \
+    --rpm-limit 1000 \
+    --batch-size 100
 ```
 
 ### 3. Python 코드에서 사용

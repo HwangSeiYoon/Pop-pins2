@@ -204,6 +204,14 @@ python python_textbook_rag_generator.py --db-name python_textbook_gemini_db --em
 - `vector_db/python_textbook_gemini_db/index.pkl` - 메타데이터 파일
 - `vector_db/python_textbook_gemini_db_metadata.json` - 처리된 파일 목록
 
+#### 6. (선택사항) 벡터 DB 품질 개선
+
+v1.4.0부터는 벡터 DB 생성 시 자동으로 다음 필터링 및 클리닝이 적용됩니다:
+- **페이지 필터링**: 목차, 색인, 저작권 페이지 등 불필요한 페이지 제외
+- **텍스트 클리닝**: 페이지 헤더/푸터(페이지 번호 등) 제거, 불필요한 공백 정리
+
+이 기능은 `python_textbook_rag_generator.py`에 내장되어 있으며, 별도 설정 없이 적용됩니다.
+
 ### 벡터 DB 사용하기
 
 벡터 DB가 생성되면, `app/.env` 파일에서 다음 설정을 확인하세요:

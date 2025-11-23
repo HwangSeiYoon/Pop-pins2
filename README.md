@@ -1,22 +1,5 @@
 # PopPins II
 
-**AI 기반 PBL 학습 자료 자동 생성 웹 애플리케이션**
-
-PopPins II는 Google Gemini AI를 활용하여 맞춤형 학습 자료를 자동으로 생성하는 웹 플랫폼입니다. 학습 주제를 입력하면 AI가 커리큘럼, 개념 정리, 실습 과제, 퀴즈를 생성하고, RAG 기술을 통해 교재 내용을 참고하여 신뢰성 높은 학습 자료를 제공합니다.
-
-## ✨ 주요 기능
-
-- 🚀 **Lazy-Loading 커리큘럼**: 초기 로드 시 커리큘럼만 빠르게 생성
-- 📚 **3가지 학습 콘텐츠**: 개념 학습, 실습 과제, 퀴즈를 각 챕터별로 제공
-- 🤖 **AI 기반 채점**: 퀴즈 답안을 AI로 자동 채점하고 상세 피드백 제공
-- 💾 **스마트 캐싱**: 한 번 생성된 챕터는 재방문 시 즉시 로드
-- 📥 **다운로드 기능**: 생성된 챕터를 Markdown 파일로 다운로드
-- 🔍 **RAG 통합**: 교재 PDF를 벡터 DB에 저장하여 참고 자료 자동 검색
-
-## 🛠️ 기술 스택
-
-- **Backend**: FastAPI + Gemini (Google Generative AI) + RAG (FAISS 벡터 DB)
-- **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
 - **AI 모델**: Gemini 2.5 Flash / Gemini 2.0 Flash Exp
 - **벡터 DB**: FAISS (LangChain 통합)
 

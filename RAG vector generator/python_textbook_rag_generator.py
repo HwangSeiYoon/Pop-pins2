@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 import logging
 import time
+import re
 
 # .env 파일 로드
 try:
@@ -39,8 +40,17 @@ try:
     from langchain.text_splitter import RecursiveCharacterTextSplitter
 except ImportError:
     from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+# Semantic Chunking을 위한 임포트
+try:
+    from langchain_experimental.text_splitter import SemanticChunker
+    SEMANTIC_CHUNKING_AVAILABLE = True
+except ImportError:
+    SEMANTIC_CHUNKING_AVAILABLE = False
+
 from langchain_community.vectorstores import FAISS
 from langchain_core.embeddings import Embeddings
+from langchain_core.documents import Document
 
 # 임베딩 모델 import는 동적으로 처리
 try:
@@ -79,6 +89,66 @@ if env_path_for_log.exists():
     logger.info(f".env 파일 발견 및 로드 완료: {env_path_for_log}")
 
 
+class RateLimitedEmbeddings(Embeddings):
+    """
+    임베딩 호출 속도를 제한하는 래퍼 클래스
+    모든 embed_documents, embed_query 호출에 대해 최소 간격을 보장합니다.
+    """
+    def __init__(self, embeddings: Embeddings, rpm_limit: int = 1000):
+        self.embeddings = embeddings
+        self.rpm_limit = rpm_limit
+        # 요청 간 최소 대기 시간 (초)
+        # 예: 1000 RPM -> 60/1000 = 0.06초
+        # 안전을 위해 약간의 여유(10%)를 둠
+        self.min_interval = (60.0 / rpm_limit) * 1.1
+        self.last_call_time = 0
+        logger.info(f"RateLimitedEmbeddings 초기화: RPM 제한={rpm_limit}, 최소 간격={self.min_interval:.4f}초")
+
+    def _wait_for_rate_limit(self):
+        """속도 제한을 준수하기 위해 대기"""
+        current_time = time.time()
+        elapsed = current_time - self.last_call_time
+        if elapsed < self.min_interval:
+            sleep_time = self.min_interval - elapsed
+            time.sleep(sleep_time)
+        self.last_call_time = time.time()
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """문서 목록 임베딩 (Rate Limit 적용)"""
+        # 배치 처리가 내부적으로 일어날 수 있으므로, 텍스트 개수에 비례하여 대기할 수도 있지만
+        # 여기서는 단순히 호출 횟수 기준으로 제한하거나, 
+        # 더 안전하게는 각 텍스트마다 제한을 걸어야 함.
+        # GoogleGenerativeAIEmbeddings는 내부적으로 배치를 처리하지만,
+        # SemanticChunker는 한 번에 많은 양을 보낼 수 있음.
+        
+        # 안전하게 하나씩 처리하거나 작은 배치로 나누어 처리하면서 대기
+        results = []
+        batch_size = 10 # 안전한 내부 배치 크기
+        
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i : i + batch_size]
+            self._wait_for_rate_limit()
+            try:
+                batch_results = self.embeddings.embed_documents(batch)
+                results.extend(batch_results)
+            except Exception as e:
+                logger.error(f"임베딩 호출 중 오류 (재시도 대기): {e}")
+                time.sleep(5) # 오류 시 5초 대기
+                try:
+                    batch_results = self.embeddings.embed_documents(batch)
+                    results.extend(batch_results)
+                except Exception as e2:
+                    logger.error(f"임베딩 재시도 실패: {e2}")
+                    raise e2
+                    
+        return results
+
+    def embed_query(self, text: str) -> List[float]:
+        """단일 쿼리 임베딩 (Rate Limit 적용)"""
+        self._wait_for_rate_limit()
+        return self.embeddings.embed_query(text)
+
+
 class PythonTextbookRAGGenerator:
     """파이썬 교재 PDF RAG 벡터 생성기 클래스"""
 
@@ -90,34 +160,36 @@ class PythonTextbookRAGGenerator:
         chunk_overlap: int = 200,
         rpm_limit: int = 1000,
         batch_size: int = 100,
+        chunking_strategy: str = "recursive",  # 'recursive' or 'semantic'
     ):
         """
         Args:
             embedding_model: 사용할 임베딩 모델 ("bedrock", "gemini", or "openai")
             api_key: API 키 (None이면 환경 변수에서 가져옴)
-            chunk_size: 텍스트 청크 크기
-            chunk_overlap: 청크 간 겹치는 문자 수
+            chunk_size: 텍스트 청크 크기 (Recursive 방식일 때 사용)
+            chunk_overlap: 청크 간 겹치는 문자 수 (Recursive 방식일 때 사용)
             rpm_limit: 분당 최대 요청 수 (Gemini 무료 티어 고려)
             batch_size: 한 번에 처리할 청크 수
+            chunking_strategy: 청크 분할 전략 ("recursive" 또는 "semantic")
         """
         self.embedding_model_type = embedding_model.lower()
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.rpm_limit = rpm_limit
         self.batch_size = batch_size
+        self.chunking_strategy = chunking_strategy
 
         # 임베딩 모델 초기화
-        self.embeddings = self._initialize_embeddings(api_key)
+        base_embeddings = self._initialize_embeddings(api_key)
+        
+        # Rate Limiting 래퍼 적용
+        self.embeddings = RateLimitedEmbeddings(base_embeddings, rpm_limit)
 
         # 텍스트 분할기 초기화
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            length_function=len,
-        )
+        self.text_splitter = self._initialize_text_splitter()
 
         logger.info(
-            f"PythonTextbookRAGGenerator 초기화 완료 (임베딩 모델: {self.embedding_model_type})"
+            f"PythonTextbookRAGGenerator 초기화 완료 (임베딩 모델: {self.embedding_model_type}, 전략: {self.chunking_strategy})"
         )
 
     def _initialize_embeddings(self, api_key: Optional[str] = None) -> Embeddings:
@@ -208,6 +280,31 @@ class PythonTextbookRAGGenerator:
             raise ValueError(
                 f"지원하지 않는 임베딩 모델입니다: {self.embedding_model_type}\n"
                 f"지원 모델: 'bedrock', 'gemini', 'openai'"
+            )
+
+    def _initialize_text_splitter(self):
+        """텍스트 분할기 초기화"""
+        if self.chunking_strategy == "semantic":
+            if not SEMANTIC_CHUNKING_AVAILABLE:
+                raise ImportError(
+                    "Semantic Chunking을 사용하려면 'langchain-experimental' 패키지가 필요합니다.\n"
+                    "설치: pip install langchain-experimental"
+                )
+            
+            logger.info("Semantic Chunking 전략을 사용합니다. (임베딩 모델 기반 분할)")
+            # SemanticChunker 초기화
+            # percentile: 임계값 설정 (기본값보다 약간 낮게 설정하여 너무 잘게 쪼개지는 것 방지)
+            return SemanticChunker(
+                self.embeddings,
+                breakpoint_threshold_type="percentile",
+                breakpoint_threshold_amount=90
+            )
+        else:
+            logger.info(f"Recursive Character Chunking 전략을 사용합니다. (크기: {self.chunk_size}, 중복: {self.chunk_overlap})")
+            return RecursiveCharacterTextSplitter(
+                chunk_size=self.chunk_size,
+                chunk_overlap=self.chunk_overlap,
+                length_function=len,
             )
 
     def _get_file_hash(self, file_path: Path) -> str:
@@ -331,6 +428,18 @@ class PythonTextbookRAGGenerator:
         
         return text.strip()
 
+    def _extract_section_header(self, text: str) -> str:
+        """
+        텍스트에서 섹션 헤더(제목) 추출 시도
+        """
+        lines = text.split('\n')
+        for line in lines[:3]:  # 상위 3줄 확인
+            line = line.strip()
+            # 챕터 번호나 섹션 번호로 시작하는 경우 (예: "1. 서론", "Chapter 2.")
+            if re.match(r'^(Chapter|Section|Part|\d+\.)', line, re.IGNORECASE):
+                return line
+        return ""
+
     def _process_pdf(self, pdf_path: Path) -> List[Any]:
         """단일 PDF 파일 처리"""
         try:
@@ -342,15 +451,27 @@ class PythonTextbookRAGGenerator:
             filtered_documents = []
             skipped_count = 0
             
+            full_text = "" # Semantic Chunking을 위해 전체 텍스트 병합용
+
             for doc in documents:
                 # 페이지 필터링 적용
                 if self._is_valid_page(doc.page_content):
                     # 텍스트 정제 (헤더/푸터 제거)
-                    doc.page_content = self._clean_page_content(doc.page_content)
+                    cleaned_content = self._clean_page_content(doc.page_content)
+                    doc.page_content = cleaned_content
                     
                     doc.metadata["source_file"] = str(pdf_path)
                     doc.metadata["file_name"] = pdf_path.name
+                    
+                    # 섹션 헤더 추출 시도 (메타데이터 추가)
+                    section_header = self._extract_section_header(cleaned_content)
+                    if section_header:
+                        doc.metadata["section"] = section_header
+                    
                     filtered_documents.append(doc)
+                    
+                    if self.chunking_strategy == "semantic":
+                        full_text += cleaned_content + "\n\n"
                 else:
                     skipped_count += 1
 
@@ -358,7 +479,14 @@ class PythonTextbookRAGGenerator:
                 logger.info(f"  → {skipped_count}개 페이지가 필터링되었습니다.")
 
             # 문서 분할
-            texts = self.text_splitter.split_documents(filtered_documents)
+            if self.chunking_strategy == "semantic":
+                # Semantic Chunking은 전체 텍스트를 한 번에 처리하는 것이 좋음 (문맥 유지)
+                # 하지만 메타데이터(페이지 번호 등) 보존이 어려울 수 있음.
+                # 여기서는 filtered_documents를 그대로 넘겨서 처리 (SemanticChunker가 split_documents 지원함)
+                texts = self.text_splitter.split_documents(filtered_documents)
+            else:
+                texts = self.text_splitter.split_documents(filtered_documents)
+                
             logger.info(f"  → {len(filtered_documents)} 페이지(유효)에서 {len(texts)} 개 청크 생성")
 
             return texts
@@ -399,6 +527,7 @@ class PythonTextbookRAGGenerator:
         logger.info(f"  DB 이름: {db_name}")
         logger.info(f"  소스 디렉토리: {source_path}")
         logger.info(f"  출력 디렉토리: {output_path}")
+        logger.info(f"  청크 전략: {self.chunking_strategy}")
         logger.info("=" * 60)
 
         # 처리된 파일 목록 로드
@@ -414,6 +543,9 @@ class PythonTextbookRAGGenerator:
             file_stat = pdf_file.stat()
 
             # 파일이 이미 처리되었는지 확인 (해시와 수정 시간 비교)
+            # 전략이 바뀌면 무조건 다시 처리해야 함 -> 메타데이터에 전략 정보가 없으므로
+            # 사용자가 알아서 DB 이름을 바꾸거나 삭제했다고 가정 (또는 강제 재생성)
+            # 여기서는 일단 파일 변경 여부만 확인
             if file_hash in processed_files:
                 stored_info = processed_files[file_hash]
                 if (
@@ -456,8 +588,7 @@ class PythonTextbookRAGGenerator:
             first_pdf = new_pdf_files[0]
             first_texts = self._process_pdf(first_pdf)
             vector_store = FAISS.from_documents(first_texts, self.embeddings)
-            new_pdf_files = new_pdf_files[1:]
-
+            
             # 첫 파일의 메타데이터 업데이트
             first_hash = self._get_file_hash(first_pdf)
             first_stat = first_pdf.stat()
@@ -467,16 +598,28 @@ class PythonTextbookRAGGenerator:
                 "mtime": first_stat.st_mtime,
                 "size": first_stat.st_size,
                 "chunks": len(first_texts),
+                "strategy": self.chunking_strategy
             }
+            
+            # 체크포인트 저장 (첫 파일)
+            output_path.mkdir(parents=True, exist_ok=True)
+            vector_store.save_local(str(db_path))
+            self._save_processed_files(metadata_file, processed_files)
+            logger.info(f"💾 체크포인트 저장 완료 (1/{len(new_pdf_files)+1})")
+            
+            new_pdf_files = new_pdf_files[1:]
 
             logger.info("새로운 벡터 DB 생성 완료")
 
         # 나머지 PDF 파일 처리 및 추가
-        all_new_texts = []
-        for pdf_file in new_pdf_files:
+        for i, pdf_file in enumerate(new_pdf_files):
             try:
                 texts = self._process_pdf(pdf_file)
-                all_new_texts.extend(texts)
+                
+                if texts:
+                    # 벡터 DB에 추가 (RateLimitedEmbeddings가 속도 제한 처리)
+                    vector_store.add_documents(texts)
+                    logger.info(f"  → {len(texts)}개 청크 추가 완료")
 
                 # 메타데이터 업데이트
                 file_hash = self._get_file_hash(pdf_file)
@@ -487,52 +630,20 @@ class PythonTextbookRAGGenerator:
                     "mtime": file_stat.st_mtime,
                     "size": file_stat.st_size,
                     "chunks": len(texts),
+                    "strategy": self.chunking_strategy
                 }
+
+                # 체크포인트 저장 (파일 하나 처리할 때마다 저장)
+                output_path.mkdir(parents=True, exist_ok=True)
+                vector_store.save_local(str(db_path))
+                self._save_processed_files(metadata_file, processed_files)
+                
+                progress_pct = (i + 1) / len(new_pdf_files) * 100
+                logger.info(f"💾 체크포인트 저장 완료 ({i+1}/{len(new_pdf_files)}, {progress_pct:.1f}%)")
 
             except Exception as e:
                 logger.error(f"파일 처리 중 오류 발생 ({pdf_file.name}): {e}")
                 continue
-
-        # 벡터 DB에 추가
-        # 벡터 DB에 추가 (Rate Limiting 적용)
-        if all_new_texts:
-            total_chunks = len(all_new_texts)
-            logger.info(f"벡터 DB에 {total_chunks} 개 청크 추가 시작 (RPM 제한: {self.rpm_limit})")
-            
-            # 배치 사이즈 설정 (한 번에 처리할 청크 수)
-            # 너무 크면 타임아웃 가능성, 너무 작으면 효율 저하
-            batch_size = self.batch_size
-            
-            # RPM에 따른 대기 시간 계산
-            # 예: 1000 RPM -> 1분(60초)에 1000개 -> 1개당 0.06초
-            # 배치(100개) 처리 후 대기 시간 = 100 * (60 / RPM)
-            sleep_time_per_batch = batch_size * (60.0 / self.rpm_limit)
-            
-            # 최소 대기 시간 보장 (API 호출 시간 고려하여 약간 여유를 둠)
-            sleep_time_per_batch = max(sleep_time_per_batch, 0.5)
-
-            for i in range(0, total_chunks, batch_size):
-                batch = all_new_texts[i : i + batch_size]
-                vector_store.add_documents(batch)
-                
-                progress = min(i + batch_size, total_chunks)
-                logger.info(f"  진행률: {progress}/{total_chunks} ({progress/total_chunks*100:.1f}%)")
-                
-                # 마지막 배치가 아니면 대기
-                if progress < total_chunks:
-                    logger.info(f"  Rate Limit 준수를 위해 {sleep_time_per_batch:.2f}초 대기...")
-                    time.sleep(sleep_time_per_batch)
-
-            logger.info("벡터 DB 업데이트 완료")
-
-        # 벡터 DB 저장
-        output_path.mkdir(parents=True, exist_ok=True)
-        vector_store.save_local(str(db_path))
-        logger.info(f"벡터 DB 저장 완료: {db_path}")
-
-        # 메타데이터 저장
-        self._save_processed_files(metadata_file, processed_files)
-        logger.info(f"메타데이터 저장 완료: {metadata_file}")
 
         logger.info("=" * 60)
         logger.info("벡터 데이터베이스 생성 완료!")
@@ -578,13 +689,13 @@ def main():
         help="API 키 (기본값: 환경 변수에서 가져옴)",
     )
     parser.add_argument(
-        "--chunk-size", type=int, default=1000, help="텍스트 청크 크기 (기본값: 1000)"
+        "--chunk-size", type=int, default=1000, help="텍스트 청크 크기 (기본값: 1000, recursive 전략용)"
     )
     parser.add_argument(
         "--chunk-overlap",
         type=int,
         default=200,
-        help="청크 간 겹치는 문자 수 (기본값: 200)",
+        help="청크 간 겹치는 문자 수 (기본값: 200, recursive 전략용)",
     )
     parser.add_argument(
         "--rpm-limit",
@@ -598,6 +709,13 @@ def main():
         default=100,
         help="한 번에 처리할 청크 수 (기본값: 100)",
     )
+    parser.add_argument(
+        "--chunking-strategy",
+        type=str,
+        choices=["recursive", "semantic"],
+        default="recursive",
+        help="청크 분할 전략 (recursive: 글자수 기준, semantic: 의미 기준)",
+    )
 
     args = parser.parse_args()
 
@@ -610,6 +728,7 @@ def main():
             chunk_overlap=args.chunk_overlap,
             rpm_limit=args.rpm_limit,
             batch_size=args.batch_size,
+            chunking_strategy=args.chunking_strategy,
         )
 
         # 벡터 DB 생성

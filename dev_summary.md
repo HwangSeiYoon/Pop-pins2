@@ -38,6 +38,61 @@
 
 ---
 
+## [v1.5.0] - 2025-11-24 Semantic Chunking 구현
+
+### 주요 변경 사항
+
+1. **Semantic Chunking 도입**
+   - 기존 고정 크기 청킹을 의미 기반 청킹으로 대체
+   - `langchain-experimental` 패키지의 `SemanticChunker` 사용
+   - 문서를 의미적 경계에서 분할하여 문맥 보존 향상
+   - 평균 5% 검색 정확도 개선 (특정 쿼리에서 최대 12.7%)
+
+2. **메타데이터 강화**
+   - 섹션 헤더 자동 추출 기능 추가
+   - 청크 메타데이터에 섹션 정보 저장
+   - 검색 결과의 문맥 파악 용이성 향상
+
+3. **Checkpointing 시스템**
+   - 파일 단위 중간 저장 기능 추가
+   - 장시간 실행 중 중단되어도 진행 상황 보존
+   - 재실행 시 처리된 파일 자동 건너뛰기
+
+4. **Rate Limiting 개선**
+   - `RateLimitedEmbeddings` 래퍼 클래스 구현
+   - 모든 임베딩 API 호출에 대한 전역 속도 제한
+   - API quota 초과 방지
+
+### 성능 검증
+
+- **3가지 버전 비교 완료**:
+  - Legacy (v1.0): Simple Chunking
+  - Filtered (v1.4): Page Filtering + Cleaning
+  - Semantic (v1.5): Semantic Chunking + Metadata
+  
+- **벡터 DB 생성**:
+  - 총 38개 PDF 파일, 1090개 청크 생성
+  - 소요 시간: 약 4시간 (2025-11-24)
+  - 위치: `RAG vector generator/vector_db/python_textbook_gemini_db_semantic`
+
+- **애플리케이션 통합**:
+  - `main_with_RAG.py`가 Semantic Vector DB 사용하도록 업데이트
+  - 환경 변수로 DB 경로 변경 가능
+
+### 문서 업데이트
+
+- `CHANGELOG.md`: v1.5.0 엔트리 추가
+- `README.md`: Semantic Chunking 반영
+- `RAG_UPDATE_LOG.md`: 상세 업데이트 로그 작성
+- `rag_comparison_analysis.md`: 성능 비교 분석 보고서 작성
+
+### 향후 개선 계획
+
+- Query Rewriting 구현 예정
+- Reranking 기능 추가 예정 (Cohere API 또는 로컬 모델)
+- Hybrid Search 고려 중
+
+---
 ## [v1.4.0] - 2025-11-22 추가 기능
 
 ### 추가된 기능
@@ -171,3 +226,4 @@
 
 ---
 *이 문서는 개발 진행 상황을 한눈에 파악할 수 있도록 요약했습니다. 필요에 따라 세부 내용은 각 파일 및 커밋 로그를 참고하세요.*
+

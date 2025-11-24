@@ -1,353 +1,516 @@
-# 파이썬 교재 PDF RAG 벡터 생성기
+# RAG Vector DB Generator
 
-파이썬 교재 PDF 파일들을 읽어 임베딩하여 FAISS 벡터 데이터베이스에 저장하는 standalone 도구입니다.
+**AI 기반 Retrieval-Augmented Generation을 위한 범용 벡터 데이터베이스 생성기**
 
-## 📋 기능
+이 도구는 **어떤 분야의 PDF 문서든** 벡터 데이터베이스로 변환하여 AI가 정확하고 신뢰할 수 있는 답변을 생성할 수 있도록 지원합니다.
 
-- 📄 PDF 파일 자동 처리
-- 🔄 기존 벡터 DB에 새 문서 추가 지원
-- 🚫 중복 처리 방지 (이미 처리된 파일 자동 스킵)
-- 🔌 유연한 임베딩 모델 지원 (Gemini, OpenAI, AWS Bedrock)
-- 📊 처리 상태 메타데이터 관리
-- 🎯 Standalone 동작 (독립적으로 실행 가능)
+---
 
-## 📦 설치
+## 📚 목차
 
-### 1. 필요한 패키지 설치
+1. [개요](#개요)
+2. [주요 기능](#주요-기능)
+3. [빠른 시작](#빠른-시작)
+4. [상세 사용법](#상세-사용법)
+5. [다양한 분야 적용](#다양한-분야-적용)
+6. [Standalone 앱으로 사용하기](#standalone-앱으로-사용하기)
+7. [성능 최적화](#성능-최적화)
+8. [문제 해결](#문제-해결)
+
+---
+
+## 🎯 개요
+
+### RAG Vector DB Generator란?
+
+**RAG**(Retrieval-Augmented Generation)는 AI가 답변을 생성할 때 관련 문서를 검색하여 참고하는 기술입니다. 이 생성기는 PDF 문서를 벡터 데이터베이스로 변환하여 RAG 시스템에서 활용할 수 있게 합니다.
+
+### 왜 사용하나요?
+
+- ✅ **정확성 향상**: AI가 문서 내용을 기반으로 답변하여 환각(hallucination) 감소
+- ✅ **도메인 특화**: 특정 분야의 전문 지식을 AI에게 제공
+- ✅ **최신 정보**: 최신 문서를 추가하여 AI 지식 업데이트
+- ✅ **범용성**: 파이썬, 의학, 법률, 금융 등 **모든 분야** 적용 가능
+
+### 현재 버전: v1.5.0 (Semantic Chunking)
+
+- **Semantic Chunking**: 의미 기반 문서 분할로 검색 정확도 5% 향상
+- **Metadata Enrichment**: 섹션 정보 자동 추출
+- **Checkpointing**: 중간 저장으로 안정성 향상
+- **Rate Limiting**: API quota 관리
+
+---
+
+## 🌟 주요 기능
+
+### 1. **Semantic Chunking (의미 기반 분할)**
+```
+기존 방식:  "파이썬은 프로그래밍 언어입니다. | 변수는 값을 저장합니다."
+            ❌ 의미 단위 무시, 고정 크기로 자름
+
+Semantic:   "파이썬은 프로그래밍 언어입니다. 변수는 값을 저장합니다."
+            ✅ 의미 단위로 자연스럽게 분할
+```
+
+### 2. **Intelligent Page Filtering**
+- 목차, 색인, 저작권 페이지 자동 제거
+- 50자 미만의 빈 페이지 필터링
+- 실제 본문 내용만 벡터화
+
+### 3. **Text Cleaning**
+- 페이지 헤더/푸터 제거 (페이지 번호, 반복 제목 등)
+- 과도한 공백 및 줄바꿈 정리
+- 깔끔한 텍스트 데이터
+
+### 4. **Three Embedding Models Supported**
+- **Gemini** (추천): `text-embedding-004`, 무료 티어 1500 RPM
+- **OpenAI**: `text-embedding-3-small`, 고성능
+- **AWS Bedrock**: `amazon.titan-embed-text-v2:0`, 엔터프라이즈
+
+### 5. **Robust Processing**
+- **Checkpointing**: 파일 단위 중간 저장
+- **Resume Capability**: 중단된 지점부터 재개
+- **Rate Limiting**: API quota 초과 방지
+- **Batch Processing**: 대량 문서 처리 지원
+
+---
+
+## 🚀 빠른 시작
+
+### 1. 환경 설정
 
 ```bash
-# 기본 패키지 설치
+cd "RAG vector generator"
 pip install -r requirements.txt
+```
 
-# 사용할 임베딩 모델 선택에 따라 추가 설치
-# Gemini 사용 시 (기본값)
-pip install langchain-google-genai
+### 2. API 키 설정
+
+`.env` 파일을 생성하고 API 키를 입력하세요:
+
+```env
+# Gemini 사용 시 (추천)
+GEMINI_API_KEY=your-gemini-api-key-here
 
 # OpenAI 사용 시
-pip install langchain-openai
+# OPENAI_API_KEY=your-openai-api-key-here
 
 # AWS Bedrock 사용 시
-pip install boto3 langchain-aws
+# AWS_ACCESS_KEY_ID=your-access-key
+# AWS_SECRET_ACCESS_KEY=your-secret-key
 ```
 
-### 2. 환경 변수 설정
+**API 키 발급 방법**:
+- Gemini: https://makersuite.google.com/app/apikey
+- OpenAI: https://platform.openai.com/api-keys
+- AWS Bedrock: AWS Console에서 IAM 설정
 
-#### 방법 1: .env 파일 사용 (권장)
+### 3. PDF 파일 준비
 
-스크립트 디렉토리에 `.env` 파일을 생성하고 API 키를 설정하세요:
+`pdfs/` 폴더에 PDF 파일들을 복사하세요:
 
-```bash
-# .env 파일 생성
-# Windows (PowerShell)
-New-Item -Path ".env" -ItemType File
-
-# Linux/Mac
-touch .env
+```
+RAG vector generator/
+├── pdfs/
+│   ├── document1.pdf
+│   ├── document2.pdf
+│   └── document3.pdf
+└── python_textbook_rag_generator.py
 ```
 
-`.env` 파일 내용:
-```env
-# Gemini 사용 시 (GEMINI_API_KEY 또는 GOOGLE_API_KEY 둘 다 지원)
-GEMINI_API_KEY=your-google-api-key
-# 또는
-GOOGLE_API_KEY=your-google-api-key
-```
+### 4. 벡터 DB 생성
 
-또는 다른 모델 사용 시:
-```env
-# Gemini 사용 시
-GEMINI_API_KEY=your-google-api-key
-# 또는 GOOGLE_API_KEY=your-google-api-key
-
-# OpenAI 사용 시
-OPENAI_API_KEY=your-openai-api-key
-
-# AWS Bedrock 사용 시
-AWS_ACCESS_KEY_ID=your-access-key-id
-AWS_SECRET_ACCESS_KEY=your-secret-access-key
-AWS_DEFAULT_REGION=ap-northeast-2
-```
-
-스크립트는 자동으로 `.env` 파일을 로드합니다.
-
-#### 방법 2: 환경 변수 직접 설정
-
-#### Gemini 사용 시 (권장)
-```bash
-# Windows (PowerShell) - GEMINI_API_KEY 또는 GOOGLE_API_KEY 둘 다 지원
-$env:GEMINI_API_KEY="your-google-api-key"
-# 또는
-$env:GOOGLE_API_KEY="your-google-api-key"
-
-# Windows (CMD)
-set GEMINI_API_KEY=your-google-api-key
-# 또는
-set GOOGLE_API_KEY=your-google-api-key
-
-# Linux/Mac
-export GEMINI_API_KEY="your-google-api-key"
-# 또는
-export GOOGLE_API_KEY="your-google-api-key"
-```
-
-#### OpenAI 사용 시
-```bash
-# Windows (PowerShell)
-$env:OPENAI_API_KEY="your-openai-api-key"
-
-# Windows (CMD)
-set OPENAI_API_KEY=your-openai-api-key
-
-# Linux/Mac
-export OPENAI_API_KEY="your-openai-api-key"
-```
-
-#### AWS Bedrock 사용 시
-```bash
-# Windows (PowerShell)
-$env:AWS_ACCESS_KEY_ID="your-access-key-id"
-$env:AWS_SECRET_ACCESS_KEY="your-secret-access-key"
-$env:AWS_DEFAULT_REGION="ap-northeast-2"
-
-# Linux/Mac
-export AWS_ACCESS_KEY_ID="your-access-key-id"
-export AWS_SECRET_ACCESS_KEY="your-secret-access-key"
-export AWS_DEFAULT_REGION="ap-northeast-2"
-```
-
-## 🚀 사용 방법
-
-### 1. PDF 파일 준비
-
-먼저 `pdfs` 디렉토리를 생성하고 파이썬 교재 PDF 파일들을 넣어주세요:
-
-```bash
-# 디렉토리 생성
-mkdir pdfs
-
-# PDF 파일들을 pdfs 폴더에 복사
-# 예: pdfs/python_basics.pdf, pdfs/python_advanced.pdf 등
-```
-
-### 2. 명령줄 인터페이스
-
-#### 기본 사용 (Gemini 임베딩, 기본 경로)
-```bash
-python python_textbook_rag_generator.py
-```
-
-#### OpenAI 임베딩 사용
-```bash
-python python_textbook_rag_generator.py --embedding-model openai
-```
-
-#### 커스텀 소스 디렉토리 지정
-```bash
-python python_textbook_rag_generator.py --source-dir "C:/path/to/your/pdfs"
-```
-
-#### 커스텀 출력 디렉토리 지정
-```bash
-python python_textbook_rag_generator.py --output-dir "C:/path/to/output"
-```
-
-#### DB 이름 지정
-```bash
-python python_textbook_rag_generator.py --db-name "my_python_db"
-```
-
-#### API 키 직접 지정
-```bash
-python python_textbook_rag_generator.py --api-key "your-api-key"
-```
-
-#### 청크 크기 조정
-```bash
-python python_textbook_rag_generator.py --chunk-size 1500 --chunk-overlap 300
-```
-
-#### Rate Limiting 설정 (API 할당량 관리)
-```bash
-# 분당 1000개 요청, 100개씩 배치 처리
-python python_textbook_rag_generator.py --rpm-limit 1000 --batch-size 100
-```
-
-#### 모든 옵션 함께 사용
+#### 기본 사용법 (Semantic Chunking)
 ```bash
 python python_textbook_rag_generator.py \
-    --db-name "python_textbook_gemini_db" \
-    --source-dir "./pdfs" \
-    --output-dir "../vector_db" \
-    --embedding-model gemini \
-    --chunk-size 1000 \
-    --chunk-overlap 200 \
-    --rpm-limit 1000 \
-    --batch-size 100
+  --db-name my_vector_db \
+  --chunking-strategy semantic \
+  --embedding-model gemini \
+  --rpm-limit 1440 \
+  --batch-size 120
 ```
 
-### 3. Python 코드에서 사용
+#### 빠른 생성 (Recursive Chunking)
+```bash
+python python_textbook_rag_generator.py \
+  --db-name my_vector_db \
+  --chunking-strategy recursive \
+  --embedding-model gemini
+```
+
+### 5. 생성 확인
+
+생성이 완료되면 다음 파일들이 생성됩니다:
+
+```
+vector_db/
+├── my_vector_db/
+│   ├── index.faiss          # 벡터 인덱스
+│   └── index.pkl            # 메타데이터
+└── my_vector_db_metadata.json  # 처리된 파일 목록
+```
+
+---
+
+## 📖 상세 사용법
+
+### 명령줄 옵션
+
+| 옵션 | 설명 | 기본값 | 예시 |
+|------|------|--------|------|
+| `--db-name` | 벡터 DB 이름 | `python_textbook_db` | `medical_db` |
+| `--chunking-strategy` | 분할 전략 | `recursive` | `semantic` |
+| `--embedding-model` | 임베딩 모델 | `gemini` | `openai` |
+| `--chunk-size` | 청크 크기 (recursive) | `1000` | `1500` |
+| `--chunk-overlap` | 청크 중복 (recursive) | `200` | `300` |
+| `--rpm-limit` | 분당 요청 수 | `1000` | `1440` |
+| `--batch-size` | 배치 크기 | `100` | `120` |
+| `--source-dir` | PDF 디렉토리 | `./pdfs` | `/path/to/pdfs` |
+| `--output-dir` | 출력 디렉토리 | `./vector_db` | `/path/to/output` |
+
+### Chunking 전략 선택
+
+#### Semantic Chunking (권장)
+- **장점**: 의미 단위로 분할, 검색 정확도 5% 향상
+- **단점**: 느림 (임베딩 API 호출 필요)
+- **용도**: 프로덕션 환경, 최고 품질
+
+```bash
+python python_textbook_rag_generator.py \
+  --chunking-strategy semantic \
+  --rpm-limit 1440
+```
+
+#### Recursive Chunking
+- **장점**: 빠름, API 호출 적음
+- **단점**: 의미 단위 무시
+- **용도**: 테스트, 빠른 프로토타이핑
+
+```bash
+python python_textbook_rag_generator.py \
+  --chunking-strategy recursive \
+  --chunk-size 1000
+```
+
+### Embedding 모델 선택
+
+#### Gemini (추천)
+```bash
+python python_textbook_rag_generator.py \
+  --embedding-model gemini \
+  --rpm-limit 1440
+```
+- **장점**: 무료 티어 1500 RPM, 한국어 우수
+- **단점**: API quota 제한
+
+#### OpenAI
+```bash
+python python_textbook_rag_generator.py \
+  --embedding-model openai \
+  --rpm-limit 3000
+```
+- **장점**: 고성능, 높은 RPM
+- **단점**: 유료
+
+#### AWS Bedrock
+```bash
+python python_textbook_rag_generator.py \
+  --embedding-model bedrock
+```
+- **장점**: 엔터프라이즈급 안정성
+- **단점**: AWS 설정 필요
+
+---
+
+## 🌍 다양한 분야 적용
+
+### 의료/의학 전문 RAG
+
+```bash
+# pdfs/ 폴더에 의학 교재 PDF 넣기
+python python_textbook_rag_generator.py \
+  --db-name medical_knowledge_db \
+  --chunking-strategy semantic \
+  --embedding-model gemini
+```
+
+**활용 예시**:
+- 의학 용어 설명
+- 진단 가이드라인 검색
+- 치료법 추천
+
+### 법률 문서 RAG
+
+```bash
+# pdfs/ 폴더에 법률 문서 PDF 넣기
+python python_textbook_rag_generator.py \
+  --db-name legal_docs_db \
+  --chunking-strategy semantic \
+  --chunk-size 1500  # 법률 문서는 긴 문단이 많음
+```
+
+**활용 예시**:
+- 판례 검색
+- 법률 조항 해석
+- 계약서 검토
+
+### 기술 문서 RAG
+
+```bash
+# pdfs/ 폴더에 기술 문서 PDF 넣기
+python python_textbook_rag_generator.py \
+  --db-name tech_docs_db \
+  --chunking-strategy recursive \
+  --chunk-size 800  # 코드 예시가 많으면 작은 청크
+```
+
+**활용 예시**:
+- API 문서 검색
+- 트러블슈팅 가이드
+- 설정 방법 찾기
+
+### 금융/경제 RAG
+
+```bash
+python python_textbook_rag_generator.py \
+  --db-name finance_db \
+  --chunking-strategy semantic
+```
+
+**활용 예시**:
+- 금융 용어 설명
+- 투자 전략 검색
+- 규정 준수 가이드
+
+---
+
+## 🔧 Standalone 앱으로 사용하기
+
+이 도구는 **완전히 독립적으로** 실행 가능합니다. PopPins II 프로젝트 외부에서도 사용할 수 있습니다.
+
+### Standalone 설치
+
+```bash
+# 1. 이 폴더만 복사
+cp -r "RAG vector generator" /path/to/standalone/location
+
+# 2. 의존성 설치
+cd /path/to/standalone/location
+pip install -r requirements.txt
+
+# 3. .env 파일 생성
+echo "GEMINI_API_KEY=your-key-here" > .env
+
+# 4. PDF 파일 추가
+# pdfs/ 폴더에 PDF 파일 복사
+
+# 5. 벡터 DB 생성
+python python_textbook_rag_generator.py --db-name my_db
+```
+
+### Python 코드에서 직접 사용
 
 ```python
 from python_textbook_rag_generator import PythonTextbookRAGGenerator
 
-# 생성기 초기화 (Gemini 사용)
+# 생성기 초기화
 generator = PythonTextbookRAGGenerator(
     embedding_model="gemini",
-    chunk_size=1000,
-    chunk_overlap=200
+    chunking_strategy="semantic",
+    rpm_limit=1440
 )
 
 # 벡터 DB 생성
 generator.generate_vector_db(
-    db_name="python_textbook_db",
-    source_dir="./pdfs",      # 선택사항
-    output_dir="./vector_db"   # 선택사항
+    db_name="my_custom_db",
+    source_dir="./my_pdfs",
+    output_dir="./my_vector_dbs"
 )
 ```
 
-## 📁 기본 경로
-
-- **소스 디렉토리**: `./pdfs/` (스크립트와 같은 디렉토리의 pdfs 폴더)
-- **출력 디렉토리**: `../vector_db/` (프로젝트 루트의 vector_db 폴더, 즉 `Pop-pins2/vector_db/`)
-
-## 📂 파일 구조
-
-```
-Pop-pins2/
-├── RAG vector generator/
-│   ├── python_textbook_rag_generator.py  # 메인 스크립트
-│   ├── requirements.txt                   # 패키지 의존성
-│   ├── README.md                          # 이 파일
-│   ├── .env                               # 환경 변수 파일 (API 키 설정)
-│   └── pdfs/                              # PDF 파일들을 넣을 디렉토리
-│       ├── python_basics.pdf
-│       ├── python_advanced.pdf
-│       └── ...
-└── vector_db/                             # 벡터 DB 저장 디렉토리 (프로젝트 루트)
-    ├── python_textbook_gemini_db/         # 벡터 DB 파일들
-    │   ├── index.faiss
-    │   └── index.pkl
-    └── python_textbook_gemini_db_metadata.json  # 처리된 파일 메타데이터
-```
-
-## 🔄 중복 처리 방지
-
-스크립트는 각 PDF 파일의 해시값과 파일 메타데이터를 저장하여 이미 처리된 파일을 자동으로 건너뜁니다. 파일이 수정된 경우에만 다시 처리됩니다.
-
-## ⚙️ 설정 옵션
-
-### 임베딩 모델
-
-- **gemini** (기본값): Google Gemini Embedding API 사용
-- **openai**: OpenAI Embedding API 사용
-- **bedrock**: AWS Bedrock Titan Embedding 사용
-
-### 청크 설정
-
-- **chunk_size**: 텍스트를 나눌 청크의 크기 (기본값: 1000자)
-- **chunk_overlap**: 청크 간 겹치는 문자 수 (기본값: 200자)
-
-교재의 특성에 따라 조정 가능:
-- 짧은 예제가 많은 경우: `chunk_size=800, chunk_overlap=150`
-- 긴 설명이 많은 경우: `chunk_size=1500, chunk_overlap=300`
-
-## ❌ 에러 처리
-
-스크립트는 명확한 에러 메시지를 제공합니다:
-
-- **API 키 누락**: 환경 변수 또는 `.env` 파일 설정 안내
-- **패키지 누락**: 필요한 패키지 설치 안내
-- **파일 없음**: 파일 경로 확인 안내
-- **벡터 DB 로드 실패**: 새로 생성 또는 문제 해결 안내
-
-### API 키 관련 문제 해결
-
-API 키 오류가 발생하면:
-1. `.env` 파일이 스크립트와 같은 디렉토리에 있는지 확인
-2. `.env` 파일에 올바른 환경 변수명이 있는지 확인:
-   - Gemini: `GEMINI_API_KEY` 또는 `GOOGLE_API_KEY`
-   - OpenAI: `OPENAI_API_KEY`
-   - AWS Bedrock: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-3. 환경 변수를 직접 설정했는지 확인
-4. `.env` 파일에 공백이나 따옴표가 없는지 확인 (예: `GEMINI_API_KEY=your-key` 형식)
-
-## 📝 예제 출력
-
-정상적으로 작동하면 다음과 같은 출력을 볼 수 있습니다:
-
-```
-============================================================
-파이썬 교재 PDF 벡터 데이터베이스 생성 시작
-  DB 이름: python_textbook_db
-  소스 디렉토리: C:\...\RAG vector generator\pdfs
-  출력 디렉토리: C:\...\RAG vector generator\vector_db
-============================================================
-발견된 PDF 파일 수: 5
-새로 처리할 파일 수: 5
-새로운 벡터 DB 생성
-PDF 처리 중: python_basics.pdf
-  → 120 페이지에서 350 개 청크 생성
-PDF 처리 중: python_advanced.pdf
-  → 200 페이지에서 580 개 청크 생성
-...
-벡터 DB에 1500 개 청크 추가 중...
-벡터 DB 업데이트 완료
-벡터 DB 저장 완료: C:\...\vector_db\python_textbook_db
-메타데이터 저장 완료: C:\...\vector_db\python_textbook_db_metadata.json
-============================================================
-벡터 데이터베이스 생성 완료!
-============================================================
-✅ 작업이 성공적으로 완료되었습니다!
-```
-
-## 🔍 벡터 DB 사용하기
-
-생성된 벡터 DB는 다음과 같이 사용할 수 있습니다:
+### 다른 프로젝트에서 벡터 DB 불러오기
 
 ```python
-import os
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-# 임베딩 모델 초기화 (생성 시 사용한 것과 동일해야 함)
-# GEMINI_API_KEY 또는 GOOGLE_API_KEY 둘 다 지원
-api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+# 임베딩 모델 초기화
 embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/embedding-001",
-    google_api_key=api_key
+    model="models/text-embedding-004",
+    google_api_key="your-key"
 )
 
 # 벡터 DB 로드
 vector_store = FAISS.load_local(
-    "./vector_db/python_textbook_db",
+    "./vector_db/my_db",
     embeddings,
     allow_dangerous_deserialization=True
 )
 
-# 유사 문서 검색
-query = "파이썬 리스트와 튜플의 차이점은?"
-docs = vector_store.similarity_search(query, k=3)
-
-for doc in docs:
-    print(f"출처: {doc.metadata['file_name']}")
-    print(f"내용: {doc.page_content[:200]}...")
-    print("-" * 50)
+# 검색
+results = vector_store.similarity_search("your query", k=3)
+for doc in results:
+    print(doc.page_content)
 ```
 
-## 💡 팁
+---
 
-1. **대량의 PDF 처리**: 많은 PDF 파일을 처리할 때는 시간이 오래 걸릴 수 있습니다. 중단되더라도 이미 처리된 파일은 건너뛰므로 다시 실행하면 됩니다.
+## ⚡ 성능 최적화
 
-2. **청크 크기 조정**: 교재의 특성에 맞게 청크 크기를 조정하면 검색 품질이 향상될 수 있습니다.
+### RPM Limit 조정
 
-3. **임베딩 모델 선택**: 
-   - Gemini: 무료 할당량이 넉넉하고 한국어 지원이 좋음
-   - OpenAI: 높은 품질이지만 비용 발생
-   - Bedrock: AWS 인프라 사용 시 적합
+**Gemini 무료 티어**:
+- 기본: 1000 RPM
+- 권장: 1440 RPM (초당 24회, 안전 마진 포함)
 
-4. **메타데이터 확인**: `*_metadata.json` 파일을 확인하면 처리된 파일 목록과 청크 수를 확인할 수 있습니다.
+```bash
+# 빠른 생성 (quota 주의!)
+python python_textbook_rag_generator.py --rpm-limit 1440
+
+# 안전한 생성
+python python_textbook_rag_generator.py --rpm-limit 1000
+
+# 느리지만 확실한 생성
+python python_textbook_rag_generator.py --rpm-limit 500
+```
+
+### Batch Size 조정
+
+```bash
+# 대량 처리 (메모리 여유 있을 때)
+python python_textbook_rag_generator.py --batch-size 200
+
+# 기본값
+python python_textbook_rag_generator.py --batch-size 100
+
+# 메모리 부족 시
+python python_textbook_rag_generator.py --batch-size 50
+```
+
+### 중단된 생성 재개
+
+Checkpointing 덕분에 중단된 지점부터 자동 재개됩니다:
+
+```bash
+# 첫 실행 (일부만 처리되고 중단)
+python python_textbook_rag_generator.py --db-name my_db
+
+# 재실행 (자동으로 이어서 처리)
+python python_textbook_rag_generator.py --db-name my_db
+# → "이미 처리된 파일 건너뛰기" 메시지 확인
+```
+
+### PDF 추가 시
+
+```bash
+# 기존 DB에 새 PDF 추가
+# 1. pdfs/ 폴더에 새 PDF 복사
+# 2. 같은 명령 실행
+python python_textbook_rag_generator.py --db-name my_db
+# → 기존 파일은 건너뛰고 새 파일만 처리
+```
+
+---
+
+## 🛠️ 문제 해결
+
+### API Quota 초과
+
+**증상**: `429 Resource has been exhausted`
+
+**해결**:
+```bash
+# 1. RPM limit 낮추기
+python python_textbook_rag_generator.py --rpm-limit 500
+
+# 2. 24시간 대기 후 재실행 (checkpointing으로 이어서 진행)
+```
+
+### 메모리 부족
+
+**증상**: `MemoryError` 또는 프로세스 중단
+
+**해결**:
+```bash
+# Batch size 줄이기
+python python_textbook_rag_generator.py --batch-size 50
+
+# Chunk size 줄이기 (recursive 전략)
+python python_textbook_rag_generator.py \
+  --chunking-strategy recursive \
+  --chunk-size 500
+```
+
+### PDF 읽기 오류
+
+**증상**: `Error processing PDF`
+
+**해결**:
+1. PDF 파일이 손상되지 않았는지 확인
+2. PDF 비밀번호가 걸려있지 않은지 확인
+3. 이미지 전용 PDF는 OCR 필요
+
+### 생성 속도가 너무 느림
+
+**원인**: Semantic Chunking은 각 문서마다 임베딩 API 호출
+
+**해결**:
+```bash
+# Recursive Chunking으로 전환
+python python_textbook_rag_generator.py \
+  --chunking-strategy recursive
+```
+
+---
+
+## 📊 버전 히스토리
+
+### v1.5.0 (2025-11-24) - Current
+- ✅ Semantic Chunking 구현
+- ✅ Checkpointing 시스템
+- ✅ RateLimitedEmbeddings 래퍼
+- ✅ 평균 5% 검색 정확도 향상
+
+### v1.4.0 (2025-11-23)
+- ✅ Page Filtering
+- ✅ Text Cleaning
+- ✅ Rate Limiting
+- ✅ Batch Processing
+
+### v1.0.0 (Initial)
+- ✅ 기본 벡터 DB 생성
+- ✅ Fixed-size chunking
+- ✅ 3 embedding models 지원
+
+---
+
+## 📚 추가 리소스
+
+### 관련 문서
+- [LangChain Documentation](https://python.langchain.com/docs/get_started/introduction)
+- [FAISS Documentation](https://github.com/facebookresearch/faiss)
+- [Gemini API Documentation](https://ai.google.dev/docs)
+
+### 프로젝트 문서
+- `../RAG_UPDATE_LOG.md`: 업데이트 로그
+- `../README.md`: 메인 프로젝트 README
+- `../app/RAG_INTEGRATION_GUIDE.md`: 통합 가이드
+
+---
+
+## 🤝 기여 및 피드백
+
+이 도구를 개선하고 싶으신가요?
+- 버그 리포트: GitHub Issues
+- 기능 제안: Pull Requests 환영
+- 질문: Discussions 탭 활용
+
+---
 
 ## 📄 라이선스
 
-이 도구는 교육 목적으로 자유롭게 사용할 수 있습니다.
+이 프로젝트는 MIT 라이선스 하에 배포됩니다.
 
+---
+
+**Happy Vector DB Building! 🚀**

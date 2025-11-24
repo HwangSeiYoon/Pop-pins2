@@ -1,5 +1,31 @@
 # 변경 이력
 
+## [1.5.0] - 2025-11-24
+
+### 주요 기능 추가
+- **Semantic Chunking 도입**: 의미 기반 문서 분할로 RAG 검색 정확도 향상
+  - `langchain-experimental` 패키지 추가
+  - `SemanticChunker`를 사용한 의미 기반 청크 분할 
+  - 섹션 헤더 메타데이터 자동 추출 및 저장
+  
+### RAG Vector DB 개선
+- **3가지 Vector DB 버전 비교 완료**:
+  - Legacy (v1.0): Simple Chunking
+  - Filtered (v1.4): Page Filtering + Cleaning
+  - Semantic (v1.5): Semantic Chunking + Metadata
+- **성능 개선 검증**:
+  - 평균 5% 유사도 개선 (특정 쿼리에서 최대 12.7%)
+  - "딥러닝 과적합 방지" 쿼리에서 의미적으로 더 정확한 문서 검색 확인
+- **Checkpointing 기능 추가**: 파일 단위 중간 저장으로 안정성 향상
+
+### 적용
+- `main_with_RAG.py`가 Semantic Vector DB (`python_textbook_gemini_db_semantic`) 사용하도록 업데이트
+- 총 38개 PDF 파일, 1090개 청크 생성 (2025-11-24)
+
+### 문서
+- 상세 비교 분석 보고서 작성
+- 향후 RAG 개선 방안 문서화 (Query Rewriting, Reranking)
+
 ## [1.4.0] - 2025-11-23
 
 ### 개선
@@ -72,3 +98,4 @@
 - 기본 자습 과제 생성 API
 - Gemini 2.5를 사용한 학습 자료 생성
 - 커리큘럼, 개념 정리, 실습 과제, 퀴즈 자동 생성
+

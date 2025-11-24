@@ -188,7 +188,7 @@ GEMINI_API_KEY=your-gemini-api-key-here
 #### 4. 벡터 DB 생성
 
 ```bash
-python python_textbook_rag_generator.py --db-name python_textbook_gemini_db --embedding-model gemini
+python python_textbook_rag_generator.py --db-name python_textbook_gemini_db_semantic --embedding-model gemini
 ```
 
 이 명령을 실행하면:
@@ -200,9 +200,9 @@ python python_textbook_rag_generator.py --db-name python_textbook_gemini_db --em
 #### 5. 생성 완료 확인
 
 생성이 완료되면 다음 파일들이 생성됩니다:
-- `vector_db/python_textbook_gemini_db/index.faiss` - 벡터 인덱스 파일
-- `vector_db/python_textbook_gemini_db/index.pkl` - 메타데이터 파일
-- `vector_db/python_textbook_gemini_db_metadata.json` - 처리된 파일 목록
+- `vector_db/python_textbook_gemini_db_semantic/index.faiss` - 벡터 인덱스 파일
+- `vector_db/python_textbook_gemini_db_semantic/index.pkl` - 메타데이터 파일
+- `vector_db/python_textbook_gemini_db_semantic_metadata.json` - 처리된 파일 목록
 
 #### 6. (선택사항) 벡터 DB 품질 개선
 
@@ -218,7 +218,7 @@ v1.4.0부터는 벡터 DB 생성 시 자동으로 다음 필터링 및 클리닝
 
 ```env
 USE_RAG=true
-VECTOR_DB_PATH=../vector_db/python_textbook_gemini_db
+VECTOR_DB_PATH=../vector_db/python_textbook_gemini_db_semantic
 VECTOR_DB_EMBEDDING_MODEL=gemini
 ```
 
@@ -370,8 +370,8 @@ A: PDF 파일을 추가하거나 수정한 경우에만 다시 생성하면 됩�
 
 ## 📝 버전 정보
 
-- **현재 버전**: v1.4.0
-- **최종 업데이트**: 2025-11-22
+- **현재 버전**: v1.5.0
+- **최종 업데이트**: 2025-11-24
 - **주요 기능**: AI 기반 학습 자료 생성, 퀴즈 채점, 챕터 다운로드
 
 ---

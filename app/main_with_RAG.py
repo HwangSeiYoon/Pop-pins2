@@ -60,7 +60,7 @@ model = genai.GenerativeModel("gemini-2.5-flash")  # 또는 'gemini-2.0-flash-ex
 # RAG 벡터 DB 설정
 VECTOR_DB_PATH = os.getenv(
     "VECTOR_DB_PATH",
-    str(Path(__file__).parent.parent / "vector_db" / "python_textbook_gemini_db"),
+    str(Path(__file__).parent.parent / "RAG vector generator" / "vector_db" / "python_textbook_gemini_db_semantic"),
 )
 VECTOR_DB_EMBEDDING_MODEL = os.getenv(
     "VECTOR_DB_EMBEDDING_MODEL", "gemini"

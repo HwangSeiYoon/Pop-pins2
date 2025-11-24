@@ -1,0 +1,10 @@
+🚀 세 가지 RAG Vector DB 버전 비교 시작
+📅 실행 시간: 2025-11-24 19:26:10
+
+📚 벡터 DB 로딩 중...
+
+❌ Legacy (v1.0 - Simple Chunking): 경로를 찾을 수 없음 - C:\Users\Lee\Desktop\Codyssey Project\pop_pins_ii\Pop-pins2\RAG vector generator\.vector_db-oldver\python_textbook_gemini_db_legacy
+❌ Filtered (v1.4 - Page Filtering + Cleaning): 경로를 찾을 수 없음 - C:\Users\Lee\Desktop\Codyssey Project\pop_pins_ii\Pop-pins2\RAG vector generator\.vector_db-oldver\python_textbook_gemini_db_filtered
+✅ Semantic (v1.5 - Semantic Chunking): C:\Users\Lee\Desktop\Codyssey Project\pop_pins_ii\Pop-pins2\RAG vector generator\vector_db\python_textbook_gemini_db_semantic
+
+⚠️ 경고: 일부 벡터 DB를 찾을 수 없습니다.

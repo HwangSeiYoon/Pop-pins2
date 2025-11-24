@@ -1,7 +1,7 @@
 # PopPins II
 
 - **AI 모델**: Gemini 2.5 Flash / Gemini 2.0 Flash Exp
-- **벡터 DB**: FAISS (LangChain 통합)
+- **벡터 DB**: FAISS with Semantic Chunking (LangChain)
 
 ## 🚀 Quick Start
 
@@ -18,7 +18,7 @@
 ```env
 GEMINI_API_KEY=your-gemini-api-key-here
 USE_RAG=true
-VECTOR_DB_PATH=../vector_db/python_textbook_gemini_db
+VECTOR_DB_PATH=../vector_db/python_textbook_gemini_db_semantic
 VECTOR_DB_EMBEDDING_MODEL=gemini
 ```
 
@@ -34,7 +34,7 @@ pip install -r requirements.txt langchain-google-genai
 # GEMINI_API_KEY=your-gemini-api-key-here
 
 # 벡터 DB 생성 (Gemini 임베딩 사용)
-python python_textbook_rag_generator.py --db-name python_textbook_gemini_db --embedding-model gemini
+python python_textbook_rag_generator.py --db-name python_textbook_gemini_db_semantic --embedding-model gemini
 ```
 
 생성된 벡터 DB는 `Pop-pins2/vector_db/` 폴더에 저장됩니다.
@@ -87,7 +87,7 @@ Pop-pins2/
 │   ├── pdfs/              # PDF 파일 저장소
 │   └── README.md
 ├── vector_db/             # RAG 벡터 DB (생성된 파일 저장)
-│   └── python_textbook_gemini_db/
+│   └── python_textbook_gemini_db_semantic/
 ├── manual.md              # 사용설명서 (비전공자용)
 ├── dev_summary.md         # 개발 요약
 └── README.md              # 이 파일
